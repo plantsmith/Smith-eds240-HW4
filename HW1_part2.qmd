@@ -1,0 +1,161 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+### **2c. Answer questions**
+
+**Once you’ve found your data set(s), answer the following questions:**
+
+-   **1.** Which of the [options](https://eds-240-data-viz.github.io/course-materials/assignments/HW4.html#hw4-options) are you most interested in pursuing (**Important:** If you plan to pursue [Option 3](https://eds-240-data-viz.github.io/course-materials/assignments/HW4.html#option3-alternative), you must submit your proposal by the HW #1 due date)? It’s okay if you change your mind later on, but it’s helpful to decide on a starting point.
+
+I will be pursuing OPTION 1: the infographic.
+
+-   **2.** Describe your data set(s). Be sure to address the following:
+
+    -   **a.** Where did you find these data?
+
+    -   **b.** What variables do these data contain? Is there sufficient metadata for understanding what those variables are?
+
+    -   My data set(s) include:
+
+        -   Air Quality System (AQS): This dataset by the EPA can be accessed though an API (raw dataset) or downloaded as a summary based on year, county, and/or pollunatants as a summary. There is metadata for both. The summary dataset contains the following variables:
+
+            -   Date
+
+            -   Source
+
+            -   SiteID
+
+            -   POC
+
+            -   Daily Max 8-hour \[pollutant\] Concentration
+
+            -   Daily AQI
+
+            -   Daily Obs Count
+
+            -   Percent Complete
+
+            -   AQS Parameter Description
+
+            -   Method Code
+
+            -   CBSA Code
+
+            -   CBSA Name
+
+            -   State FIPS Code
+
+            -   State
+
+            -   County FIPS Code
+
+            -   County
+
+            -   Lat/Long
+
+        -   National Emissions Inventory (NEI): I'm also considering using emissions data for point sources from the EPA. There is sufficient metadata and the dataset covers all (point, nonpoint, onroad, and nonroad) categories. The dataset contains the following variables:
+
+            -   state	
+
+            -   fips state code
+
+            -   tribal name	
+
+            -   fips code	
+
+            -   county	
+
+            -   eis facility id	
+
+            -   program system code	
+
+            -   agency facility id	
+
+            -   tri facility id	
+
+            -   company name	
+
+            -   site name	
+
+            -   primary naics code	
+
+            -   primary naics
+
+            -   description	
+
+            -   facility source type	
+
+            -   lat/long	
+
+            -   address (city, zip code, postal abbreviation)	
+
+            -   reporting period	
+
+            -   emissions operating type	
+
+            -   pollutant code	
+
+            -   pollutant desc	
+
+            -   pollutant type(s)	
+
+            -   hap type	
+
+            -   total emissions	emissions
+
+            -   uom	data set	
+
+            -   outlier minimum	
+
+            -   outlier maximum	
+
+            -   outlier?	
+
+            -   national maximum
+
+        -   CALEnviroscreen data for heath and socioeconomic data. There is sufficient metadata, and quite a few variables. I've used this data set before though, so I feel pretty comfortable with it.
+
+-   **3.** What steps are involved in downloading or accessing the data (e.g. “I can download using a button via this online portal,” “I need to use an API to retrieve the data,” “There’s an R package with functions for accessing the API,” etc.)?
+
+    -   For both NEI and AQS data, I can access summary data though direct download on the EPA website. There is also an API option for the AQS data (raw format). I'm not sure I will need that level for data, but I have requested access to the API and plan on exploring it a bit.
+
+-   **4.** What question(s) do you hope to answer using these data (remember to read over Enrico Bertini’s [article](https://filwd.substack.com/p/asking-the-right-data-questions-andon%20how%20to%20ask%20the%20right%20questions))?
+
+    I'm still brainstorming possibilities, but here are some initial thoughts:
+
+    -   Overarching question/story: How have air pollution levels in Los Angeles changed over time, and what are the contributing factors and impacts on residents? —\> this may be too broad
+
+        -   How have major air pollutants trended over the last 10–20 years (line graph? bar chart?)
+
+        -   Is air pollution worse/better at certain times of the day? (clock plot –\> i dont think i have hourly data, unless I pull from raw data)
+
+        -   Which facilities or industries emit the most pollutants, and where are they located? (bar chart, map)
+
+        -   Which areas of Los Angeles are most affected by poor air quality? (heat map)
+
+        -   How does air pollution correlate with health outcomes (maybe asthma) or socioeconomic factors (poverty)? (some sort of comparison of pollution hotspots/levels of asthma/poverty. Not all of them. I'm still working on it.
+
+-   **5.** Will you need to combine multiple data sets to successfully answer your question(s)? If so, have you found all the necessary data? Do you have a way to combine it (e.g. matching key values across all data sets)?
+
+-   ***Optional:** Import your data into R! (this will be a part of the next homework assignment) **IMPORTANT:** If your data files are large (\>2GB) DO NOT push your data to GitHub – instead, add your data file(s) or entire data folder to your `.gitignore` (you’ll practice this in week 1 discussion section).*
+
+## **Rubric (specifications)**
+
+1.  Create a GitHub repository named yourLastName-eds240-HW4, which is where you’ll be doing any / all work related to Assignment #4. Be sure to make your repository public, initialize your repository with a README, and add a .gitignore file.
+
+2.  Create a GitHub issue (find the Issues tab in the top menu bar of your lastName-eds240-HW4 repo, then click New issue) and name it, HW1 - finding data / initial brainstorming. Address the following in your issue:
+
+    -   Link to (or otherwise prove the existence of) at least one data set that you plan to use for Assignment #4.
+
+    -   Answer all five Part 2c questions. There is no set length requirement, but you must answer each question in full to receive a Satisfactory score.
+
+    -   Ensure that your GitHub issue is neatly organized / formatted (you can use Markdown syntax here!).
+
+    -   Tag your instructor (@samanthacsik) and TA (@annieradams) somewhere in your issue (at the start or end may make the most sense) – this will send us an email notification linking to your issue
+
+3.  Importing your data is optional – if you’d like to start playing around with your data, do so in a file named, HW1-find-data.qmd.
+
+4.  Add your repository’s URL next to your name on this Google Sheet by 11:59pm on Sat 01/18/2025.

@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "HW 1, Part 2: Brainstorm and Organize"
 format: html
 editor: visual
 ---
@@ -139,6 +139,8 @@ I will be pursuing OPTION 1: the infographic.
         -   How does air pollution correlate with health outcomes (maybe asthma) or socioeconomic factors (poverty)? (some sort of comparison of pollution hotspots/levels of asthma/poverty. Not all of them. I'm still working on it.
 
 -   **5.** Will you need to combine multiple data sets to successfully answer your question(s)? If so, have you found all the necessary data? Do you have a way to combine it (e.g. matching key values across all data sets)?
+
+    -   I have all the datasets I need, and I may need to combine them. I can combine by joining by county/fips code, state/fips code, or though lat/longs
 
 -   ***Optional:** Import your data into R! (this will be a part of the next homework assignment) **IMPORTANT:** If your data files are large (\>2GB) DO NOT push your data to GitHub – instead, add your data file(s) or entire data folder to your `.gitignore` (you’ll practice this in week 1 discussion section).*
 

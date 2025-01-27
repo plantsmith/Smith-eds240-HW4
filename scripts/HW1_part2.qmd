@@ -58,61 +58,61 @@ I will be pursuing OPTION 1: the infographic.
 
         -   National Emissions Inventory (NEI): I'm also considering using emissions data for point sources from the EPA. There is sufficient metadata and the dataset covers all (point, nonpoint, onroad, and nonroad) categories. The dataset contains the following variables:
 
-            -   state	
+            -   state
 
             -   fips state code
 
-            -   tribal name	
+            -   tribal name
 
-            -   fips code	
+            -   fips code
 
-            -   county	
+            -   county
 
-            -   eis facility id	
+            -   eis facility id
 
-            -   program system code	
+            -   program system code
 
-            -   agency facility id	
+            -   agency facility id
 
-            -   tri facility id	
+            -   tri facility id
 
-            -   company name	
+            -   company name
 
-            -   site name	
+            -   site name
 
-            -   primary naics code	
+            -   primary naics code
 
             -   primary naics
 
-            -   description	
+            -   description
 
-            -   facility source type	
+            -   facility source type
 
-            -   lat/long	
+            -   lat/long
 
-            -   address (city, zip code, postal abbreviation)	
+            -   address (city, zip code, postal abbreviation)
 
-            -   reporting period	
+            -   reporting period
 
-            -   emissions operating type	
+            -   emissions operating type
 
-            -   pollutant code	
+            -   pollutant code
 
-            -   pollutant desc	
+            -   pollutant desc
 
-            -   pollutant type(s)	
+            -   pollutant type(s)
 
-            -   hap type	
+            -   hap type
 
-            -   total emissions	emissions
+            -   total emissions emissions
 
-            -   uom	data set	
+            -   uom data set
 
-            -   outlier minimum	
+            -   outlier minimum
 
-            -   outlier maximum	
+            -   outlier maximum
 
-            -   outlier?	
+            -   outlier?
 
             -   national maximum
 
@@ -124,11 +124,13 @@ I will be pursuing OPTION 1: the infographic.
 
 -   **4.** What question(s) do you hope to answer using these data (remember to read over Enrico Bertini’s [article](https://filwd.substack.com/p/asking-the-right-data-questions-andon%20how%20to%20ask%20the%20right%20questions))?
 
-    I'm still brainstorming possibilities, but here are some initial thoughts:
-
-    -   Overarching question/story: How have air pollution levels in Los Angeles changed over time, and what are the contributing factors and impacts on residents? —\> this may be too broad
+    -   
 
         -   How have major air pollutants trended over the last 10–20 years (line graph? bar chart?)
+
+            -   which one are the big contributors (three pollutants)
+
+                -   narrow down on those specific
 
         -   Is air pollution worse/better at certain times of the day? (clock plot –\> i dont think i have hourly data, unless I pull from raw data)
 
@@ -137,6 +139,16 @@ I will be pursuing OPTION 1: the infographic.
         -   Which areas of Los Angeles are most affected by poor air quality? (heat map)
 
         -   How does air pollution correlate with health outcomes (maybe asthma) or socioeconomic factors (poverty)? (some sort of comparison of pollution hotspots/levels of asthma/poverty. Not all of them. I'm still working on it.
+
+-   **Where and what are the impacts on residents**
+
+-   Changes in pollutants over time
+
+    -   time variables
+
+-   facilities/industries loacted
+
+-   Area most affected by air quality
 
 -   **5.** Will you need to combine multiple data sets to successfully answer your question(s)? If so, have you found all the necessary data? Do you have a way to combine it (e.g. matching key values across all data sets)?
 

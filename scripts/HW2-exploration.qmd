@@ -1,36 +1,305 @@
 ---
-title: "hw"
+title: "HW 2: Exploration "
 format: 
   html:
-    code-fold: false
+    code-fold: true
     toc: true
     number-sections: true
     embed-resources: true
 theme: Litera
 editor: visual
-execute:
-  echo: true
-  message: false
-  warning: false
 ---
 
+Load Libraries
+
 ```{r}
+#| message: false
+#| warning: false
+
 #libraries: 
 library(tidyverse)   # dplyr, purrr, etc.
 library(janitor)     # for clean_names()
-library(lubridate)   # for mdy(), year(), month(), day()
+library(lubridate)   # for mdy(), etc
 library(here)        # for here()
 library(sf)          # spatial data
-library(doBy)        # for summaryBy
+library(doBy)        # for summaryBy()
 ```
 
-# AIR POLLUTANTS
+## AQI
+
+### Median AQI
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
+# data ranges from 2000 - 2024
+years <- 2000:2024
+
+# -------- S E T  U P  L O O P  --------
+median_aqi_list <- map(years, ~ {
+  
+      # build the file path
+  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
+  
+# -------- R E A D  I N  D A T A --------
+  read_csv(aqi_file_path) %>%
+    clean_names() %>%
+    
+# -------- T I D Y--------
+      #transform date from a character to a date
+    mutate(date = mdy(date)) %>%
+    
+      #extract year
+    mutate(year = year(date)) %>% 
+
+      #calculate median AQI
+    group_by(year) %>%
+    summarize(
+      median_aqi = median(overall_aqi_value, na.rm = TRUE),
+      .groups = "drop")
+    
+})
+
+# combine into one data frame
+median_aqi_df <- bind_rows(median_aqi_list)
+
+
+
+
+  
+```
+
+### Visualize
+
+```{r}
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  geom_line() + 
+  geom_point() +
+labs(x = "Year", y = "Mean AQI") +
+  coord_fixed(ratio = 1/2) +
+  theme_minimal()
+```
+
+Notes: fix scaling, aspect, overlay EPA's air quality standards as a reference line.
+
+Events: California Diesel Risk Reduction Program (2000), 2005: The SCAQMD developed Clean Fleet rules to reduce diesel exhaust, decomissioning coal plants (?), 2003, SCAQMD implemented "Check Before You Burn, 2020 spike due to wildfire (?)
+
+### Main Pollutant in AQI
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
+# -------- S E T  U P  L O O P  --------
+common_pollutant_list <- map(years, ~ {
+  
+  # file path
+  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
+  
+  # -------- R E A D  I N  D A T A --------
+  read_csv(aqi_file_path) %>%
+    clean_names() %>%
+    
+    # character to date
+    mutate(date = mdy(date)) %>%
+    
+    # extract year
+    mutate(year = year(date)) %>%
+    
+    select(year, main_pollutant)
+
+})
+
+# Combine all common pollutant calculations into one data frame
+common_pollutant_all <- bind_rows(common_pollutant_list)
+
+
+```
+
+
+### Visualize 1.0
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
+ggplot(common_pollutant_all, aes(x = main_pollutant)) +
+  geom_bar() + 
+  coord_flip()
+
+```
+
+Id love for this to be circles with size showing count...
+
+
+```{r}
+# ---------- SUMMARIZE BY YEAR ---------
+
+# count occurrences of pollutants for the year
+top_pollutants <- common_pollutant_all %>% 
+  group_by(year, main_pollutant) %>%
+  summarize(count = n(), .groups = "drop") %>% 
+
+  group_by(main_pollutant) %>%
+  summarize(avg_count = mean(count), .groups = "drop")
+
+
+
+```
+
+### Visualize 2.0
+```{r}
+library(dplyr)
+library(packcircles)
+library(ggplot2)
+
+# -------- STEP 1:Compute circle layout----------
+
+# circleProgressiveLayoutcalculates the positions and sizes of circles to create a non-overlapping
+circle_layout <- circleProgressiveLayout(top_pollutants$avg_count, sizetype = "area")
+
+# Add a small gap between circles
+circle_layout$radius <- circle_layout$radius * 0.95
+
+# Add coordinates back to the pollutant data
+circle_data <- cbind(top_pollutants, circle_layout)
+
+# create vertices for circle polygons
+circle_vertices <- circleLayoutVertices(circle_layout, npoints = 50)
+
+# -------- STEP 2: ADD NESTED CIRCLES ----------
+# Generate radius, x, and y coordinates for nested circles
+circle_layout_border <- circle_layout
+circle_layout_border$radius <- circle_layout$radius * 0.95
+
+# Create vertices for nested circles
+circle_vertices_border <- circleLayoutVertices(circle_layout_border, npoints = 50)
+
+# # -------- STEP 3: JOIN TABLES TO ADD LABELS ----------
+# 
+# Combine the pollutant data with circles (center coordinates and radius)
+circle_labels <- cbind(top_pollutants, circle_layout)
+
+
+```
+
+```{r}
+# -------- STEP 4: BASE PLOT(s) ----------
+
+#plot the circles
+gg_circles <- ggplot() +
+  geom_polygon(data = circle_vertices, 
+               aes(x = x, y = y, group = id, fill = as.factor(id)), 
+               color = "black", alpha = 0.6) +
+  theme_void() +
+  coord_equal() +
+  labs(fill = "Pollutant")
+
+
+# add nested circles
+  
+gg_circles_nested <- gg_circles +
+  geom_polygon(data = circle_vertices_border,
+               aes(x = x, y = y, group = id, fill = as.factor(id)),
+               colour = "black", alpha = 0.3) +
+  theme_void()
+
+gg_circles_nested 
+
+
+
+```
+
+
+```{r}
+
+
+# custom red colors:
+custom_red_palette <- c("#FFCCCC", "#FF9999", "#FF6666", "#FF3333", "#CC0000")
+
+
+gg_circles_with_labels <- gg_circles_nested +
+  geom_text(data = circle_labels,
+            aes(x = x, y = y, size = avg_count, label = main_pollutant), # Add labels to the centers of the circles
+            # fontface = "bold",
+            color = "black") +
+  scale_fill_manual(values = custom_red_palette) +  # Apply custom red palette
+  scale_size_continuous(range = c(1.5, 6)) +
+
+  theme_void() +  # Minimalist theme
+  theme(legend.position = "none"
+  ) +
+  coord_equal()  # Ensure circles are proportional
+
+gg_circles_with_labels
+
+
+
+```
+
+```{r}
+# Calculate Percentages:
+# Add a new column with the percentage of the average frequency of pollutants
+circle_labels$percent <- round(
+  circle_labels$avg_count / sum(circle_labels$avg_count) * 100
+)
+
+# custom red colors:
+custom_red_palette <- c("#FFCCCC", "#FF9999", "#FF6666", "#FF3333", "#CC0000")
+
+# Add percentage labels inside circles
+gg_circles_nested +
+  geom_text(
+    data = circle_labels,
+    aes(x = x, y = y, size = avg_count, label = paste0(percent, "%")),  # Show percentages only
+    show.legend = FALSE  # Ensure text size doesn't appear in legend
+  ) +
+  scale_size_continuous(range = c(2, 10)) +  # Adjust text size scaling
+  scale_fill_manual(
+    values = custom_red_palette,  # Use custom color palette
+    labels = circle_labels$main_pollutant  # Map pollutant names to legend
+  ) +
+  guides(fill = guide_legend(
+    nrow = 3,
+    direction = "horizontal",
+    title = NULL,
+    label.theme = element_text(size = 7, margin = margin(l = 0.5)),
+    keywidth = unit(7, "pt"),
+    keyheight = unit(7, "pt"))
+  ) +
+  theme_void() +  # Clean theme
+  theme(
+    legend.position = c(1.05, 0.15)  # Adjust legend position
+  )
+
+```
+
+
+
+# Individual Pollutants
 
 ## PM 2.5 Single Pollutant
+
+After exploring the data, I dont think I will use these datasets.
 
 ### Tidy
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 PM2_5_df <- read.csv(here("data/pm_annual.csv")) %>% 
   clean_names()
 
@@ -63,6 +332,12 @@ PM2_5 <- PM2_5_df %>%
 ### Visualize by Year
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
   geom_line() + 
   geom_point() +
@@ -70,7 +345,6 @@ ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
   theme_bw()
 
 
-library(ggplot2)
 
 ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
   geom_line() + 
@@ -83,13 +357,15 @@ ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
 
 ```
 
-Notes: fix scaling, aspect, overlay EPA's air quality standards (e.g., EPA's 12 µg/m³ threshold) as a reference line.
-
-Events: California Diesel Risk Reduction Program (2000), 2005: The SCAQMD developed Clean Fleet rules to reduce diesel exhaust, decomissioning coal plants (?), 2003, SCAQMD implemented "Check Before You Burn, 2020 spike due to wildfire (?)
-
-### Visualize by Month 
+### Visualize by Month
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+
 monthly_PM2_5 <- PM2_5 %>% 
    group_by(month) %>%
     summarize(
@@ -101,6 +377,12 @@ monthly_PM2_5 <- PM2_5 %>%
 ```
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 ggplot(monthly_PM2_5, aes(x = month, y = monthly_mean_pm2_5)) +
   geom_bar(stat = "identity") +
   labs(x = "Month (2000-2024)", y = "Mean PM2.5 (µg/m³)") +
@@ -108,11 +390,16 @@ ggplot(monthly_PM2_5, aes(x = month, y = monthly_mean_pm2_5)) +
   theme_bw()
 ```
 
-## Ozone - dont need?
+## Ozone
 
 ### Tidy
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 #read in data and clean names
 annual_ozone <- read.csv(here("data/ozone_annual.csv")) %>% 
   clean_names()
@@ -137,6 +424,12 @@ annual_ozone <- annual_ozone %>%
 ### Visualize
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 # make a bar graph 
 ggplot(annual_ozone, aes(x = year, y = days_over_070)) +
   geom_col()
@@ -144,142 +437,17 @@ ggplot(annual_ozone, aes(x = year, y = days_over_070)) +
 #this is cool but id rather have it in buckets of unhealthy for sensi, unhealthy, and v unhealthy - stacked bar/area
 ```
 
-## AQI
-
-### Median AQI
-
-```{r}
-# Data ranges from 2000 - 2024
-years <- 2000:2024
-
-# -------- S E T  U P  L O O P FOR MEDIAN AQI --------
-median_aqi_list <- map(years, ~ {
-  
-  # Build the file path
-  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
-  
-  # -------- R E A D  I N  D A T A --------
-  read_csv(aqi_file_path) %>%
-    clean_names() %>%
-    
-    # Transform date from a character to a date
-    mutate(date = mdy(date)) %>%
-    
-    # Extract year
-    mutate(year = year(date)) %>%
-    
-    # Calculate median AQI
-    group_by(year) %>%
-    summarize(
-      median_aqi = median(overall_aqi_value, na.rm = TRUE),
-      .groups = "drop"
-    )
-})
-
-# Combine all median AQI calculations into one data frame
-median_aqi_all <- bind_rows(median_aqi_list)
-
-# View the median AQI data frame
-median_aqi_all
-
-  
-```
-
-### Visualize
-
-```{r}
-ggplot(aqi_all, aes(x = year, y = median_aqi)) +
-  geom_line() + 
-  geom_point() +
-labs(x = "Year", y = "Mean AQI") +
-  coord_fixed(ratio = 1/2) +
-  theme_minimal()
-```
-
-### Most Common Pollutant
-
-```{r}
-# -------- S E T  U P  L O O P  --------
-common_pollutant_list <- map(years, ~ {
-  
-  # file path
-  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
-  
-  # -------- R E A D  I N  D A T A --------
-  read_csv(aqi_file_path) %>%
-    clean_names() %>%
-    
-    # character to date
-    mutate(date = mdy(date)) %>%
-    
-    # extract year
-    mutate(year = year(date)) %>%
-    
-    # count occurrences of pollutants for the year
-    group_by(year, main_pollutant) %>%
-    summarize(
-      count = n(), 
-      .groups = "drop"
-    ) %>%
-    
-    # find the most common pollutant for the year
-    slice_max(count, n = 4, with_ties = FALSE) 
-})
-
-# Combine all common pollutant calculations into one data frame
-common_pollutant_all <- bind_rows(common_pollutant_list)
-
-# Find the average count of each pollutant across the years
-av_pollutant <- common_pollutant_all %>% 
-  group_by(main_pollutant) %>% 
-  summarize(
-    avg_count = mean(count, na.rm = TRUE) 
-  )
-
-
-```
-### Visualize
-Circle size represents the average occurrences across years
-```{r}
-# Create a Proportional Area Chart with PM10 and CO included
-ggplot(av_pollutant, aes(x = 1, y = main_pollutant, size = avg_count, fill = main_pollutant)) +
-  geom_point(shape = 21, color = "black", alpha = 0.7) + # work on size
-  scale_size_continuous(
-    range = c(5, 30), # trying to adjust size but its not waht i want
-  ) +
-  coord_flip() + 
-  scale_fill_manual(
-    values = c(
-      "PM2.5" = "red",
-      "PM10" = "orange",
-      "Ozone" = "blue",
-      "CO" = "purple",
-      "NO2" = "green"
-    )
-  ) +
-  labs(
-    x = NULL,
-    y = "Pollutant",
-  ) +
-  theme_void() +
-  theme(
-    legend.position = "none" # remove the legend
-  )
-
-
-```
-
-
-
-```{r}
-
-```
-
 # Census and Socioeconomic Data
 
 ## Enviroscreen (tabular) - Tidy
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 # read in enviroscreen data and clean names
 ES_full <- read.csv(here("data/enviroscreen/enviroscreen_csv/enviroscreen_data.csv")) %>% 
   clean_names()
@@ -305,7 +473,7 @@ es_df <- ES_full %>%
          poverty,
 )
 
-# Filter dataset for Los Angeles County
+# filter dataset for Los Angeles County
 top_10_pm2_5  <- es_df %>% 
   filter(california_county == "Los Angeles")
 
@@ -321,47 +489,31 @@ top_10_pm2_5 <- top_10_pm2_5  %>%
       # select the top 10 zip codes
   slice(1:10) 
 
-# View the result
-top_10_pm2_5
-
-
-# Filter dataset for Los Angeles County
-top_10_ozone  <- es_df %>% 
-  filter(california_county == "Los Angeles")
-
-top_10_ozone <- top_10_ozone %>%
-  group_by(zip) %>% 
-      # calculate the mean PM2.5 for each zip
-  mutate(mean_ozone = mean(ozone, na.rm = TRUE)) %>% 
-  ungroup() %>%
-      # arrange by the mean
-  arrange(desc(mean_ozone)) %>% 
-      # keep one row per zip
-  distinct(zip, .keep_all = TRUE) %>% 
-      # select the top 10 zip codes
-  slice(1:10) 
-
-# View the result
-top_10_ozone
-
-
 
 ```
-91335 (Reseda): 
-91711 (Claremont): interesting...this doesnt logically make sense
-91767 (Pomona)
-90012 (Downtown Los Angeles)
-91316 (Encino)
-91766 (Pomona)
-90031 (Lincoln Heights)
-90071 (Bunker Hill/DTLA)
-90033 (Boyle Heights)
-91406 (Van Nuys)
 
+Top 10 Zip Codes w highest mean PM 2.5:
+
+-   91335 Reseda
+-   91711 Claremont
+-   91767 Pomona
+-   90012 Downtown Los Angeles
+-   91316 Encino
+-   91766 Pomona
+-   90031 Lincoln Heights --\> **MY HOUSE!**
+-   90071 Bunker Hill/DTLA
+-   90033 Boyle Heights
+-   91406 Van Nuys
 
 ## Enviroscreen (spatial) - Tidy
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 # --------------------Spatial Data-----------------------
 # bring in enviroscreen shapefile
 enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_final_shapefile.shp")) %>% 
@@ -393,6 +545,12 @@ enviroscreen_sf <- enviroscreen_sf %>%
 ## Tidy Census
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 library(tidycensus)
 
 ### Step 1: Census data filtered to Los Angeles
@@ -436,6 +594,11 @@ enviroscreen_sf <- enviroscreen_sf %>%
 ```
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 ### Step 3: join tidy census and enviroscreen
 # set crs to be the same as la census tracts
 enviroscreen_sf <- st_transform(enviroscreen_sf, st_crs(la_census_filter))
@@ -447,6 +610,12 @@ final_enviroscreen <- st_filter(enviroscreen_sf, la_census_filter)
 ### Visualize
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
 # plot PM 2.5 per census tract
 ggplot() +
   geom_sf(data = final_enviroscreen, aes(fill = pm2_5_p), color = 'black', size = 1) +
@@ -461,17 +630,20 @@ ggplot() +
   theme_void()
 ```
 
-While this is showing where PM 2.5 is high in LA it doesnt show how it relates to socioeconomic vulnerability - BIVARIATE MAP?
+Using percentile PM2.5 as opposed to raw PM 2.5 shows more of an EJ POV, as the percentile is a relative ranking of PM2.5 concentrations compared to other census tracts statewide. (ex: A percentile of 90 means the area has higher PM2.5 pollution than 90% of other census tracts in California.)
 
-If you use percentile it shows EJ --> as the percentile is a relative ranking of PM2.5 concentrations compared to other census tracts statewide. (ex: A percentile of 90 means the area has higher PM2.5 pollution than 90% of other census tracts in California.)
-
-# Sources
+# Pollution Sources
 
 ## Point Sources
 
 ### Tidy
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 point_sources <- read.csv(here("data/sources/facility_point_sources_2020.csv")) %>% 
   clean_names()
 
@@ -509,6 +681,12 @@ point_sources_sf <- st_filter(point_sources_sf, final_enviroscreen)
 ### Visualize Spatially
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 ggplot() +
     geom_sf(data = point_sources_sf, aes(color = pollutant)) +
     theme_minimal() +
@@ -516,9 +694,14 @@ ggplot() +
 
 ```
 
-There are just so many point sources - what it I mapped just the top 20 emitters.
+There are just so many point sources, so I'm going to try mapping just the top what it I mapped just the top 50 emitters.
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 # only show emissions over 6.1 tons
 
 #convert emissions_tons to numeric: 
@@ -535,6 +718,12 @@ major_point_sources <- point_sources_sf %>%
 ```
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
 ggplot() +
   # LA map with PM2.5 fill
   geom_sf(data = final_enviroscreen, aes(fill = pm2_5_p), color = 'black', size = 0.2, alpha = 1) +
@@ -548,31 +737,31 @@ ggplot() +
   # Color scale for pollutant types
   scale_color_manual(
     values = c(
-      "PM2.5 Primary (Filt + Cond)" = "red",
-      "PM2.5 Filterable" = "blue"
+      "PM2.5 Primary (Filt + Cond)" = "cyan",
+      "PM2.5 Filterable" = "cyan4"
     )
   ) +
   
   # Minimalist theme
-  theme_void() +
-  theme(
-    legend.position = "bottom",
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 10),
-    plot.title = element_text(hjust = 0.5, size = 16)
-  )
+  theme_void()
 
 
 ```
 
-### Visualize by Type
+### Visualize by Source Type
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
 point_sources_plot <- ggplot(top_point_sources, aes(x = reorder(facility_type, emissions_tons), y = emissions_tons)) +
-  geom_col(fill = "steelblue") +  
+  geom_col() +  
   coord_flip() +  
   labs(
-    title = "PM2.5 Emissions by Facility Type",
+    title = "PM2.5 Emissions - Point Sources (Facilities)",
     x = "Facility Type",
     y = "Emissions (Tons)"
   ) +
@@ -589,7 +778,13 @@ point_sources_plot
 ## Non-point Sources
 
 # Tidy
+
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
 nonpoint_sources <- read.csv(here("data/sources/nonpoint_sources_2020.csv")) %>% 
   clean_names()
 
@@ -611,8 +806,14 @@ major_nonpoint_sources <- nonpoint_sources %>%
 ```
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
 nonpoint_sources_plot <- ggplot(major_nonpoint_sources, aes(x = reorder(scc_level_2, emissions_tons), y = emissions_tons)) +
-  geom_col(fill = "steelblue") +  
+  geom_col() +  
   coord_flip() +  
   labs(
     title = "PM2.5 Emissions - Nonpoint",
@@ -627,4 +828,3 @@ nonpoint_sources_plot <- ggplot(major_nonpoint_sources, aes(x = reorder(scc_leve
 nonpoint_sources_plot
 
 ```
-

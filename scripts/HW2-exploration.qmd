@@ -67,21 +67,293 @@ median_aqi_list <- map(years, ~ {
 # combine into one data frame
 median_aqi_df <- bind_rows(median_aqi_list)
 
-
-
-
-  
 ```
 
 ### Visualize
 
+####1)
+
+```{r}
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+ geom_line() + 
+  geom_point() +
+  labs(x = " ", y = "Median AQI") +
+  
+    scale_y_continuous(
+    limits = c(60, 105),
+    breaks = seq(60, 100, by = 10)
+ ) +
+  
+    scale_x_continuous(
+    limits = c(2000, 2024), # Set axis range
+    breaks = seq(2000, 2024, by = 2), 
+  ) +
+  
+  theme_minimal() +
+  #remove gridlines
+  theme(
+    # panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+    )
+
+```
+
+#### 2)
+
 ```{r}
 ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  labs(x = " ", y = "Median AQI") +
+  
+  # Add colored axis lines
+  geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#88B589", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#F3D03E", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E67E52", linewidth = 2) +
+  
   geom_line() + 
   geom_point() +
-labs(x = "Year", y = "Mean AQI") +
-  coord_fixed(ratio = 1/2) +
-  theme_minimal()
+  
+  scale_y_continuous(
+    limits = c(50, 105),
+    breaks = seq(50, 100, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5)
+  ) +
+  
+  theme_minimal() +
+  
+  theme(
+    panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    
+    axis.line.y = element_blank(),
+    
+    axis.title = element_blank(),   # Remove axis titles
+
+  )
+```
+
+nice colors: \# Add colored axis lines geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#F3D03E", linewidth = 2) + geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#9BC4A7", linewidth = 2) + geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E88D67", linewidth = 2) +
+
+#### 3)
+
+```{r}
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+  geom_line() + 
+  geom_point() +
+  
+  scale_y_continuous(
+    limits = c(1, 110),
+    breaks = seq(0, 100, by = 10)
+ ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024), # Set axis range
+    breaks = seq(2000, 2024, by = 2),  
+  ) +
+
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+)
+```
+
+#### 4)
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+#------BACKGROUND------  
+  # Add AQI threshold background colors
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 40, ymax = 50, 
+           fill = "#88B589", alpha = 0.3) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 50, ymax = 100, 
+           fill = "#F3D03E", alpha = 0.2) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 100, ymax = 110, 
+           fill = "#E67E52", alpha = 0.2) +
+  
+  
+  # Add category labels
+  # GOOD
+  annotate("text", 
+           x = 2023, 
+           y = 45, 
+           label = "Good", 
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  # MODERATE
+  annotate("text", 
+           x = 2023, 
+           y = 62, 
+           label = "Moderate",
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  # UNHEALTHY
+  annotate("text", 
+           x = 2023, 
+           y = 105, 
+           label = "Unhealthy for\nSensitive Groups", 
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  
+#------FOREGROUND------    
+    
+  geom_line() + 
+  geom_point() +
+  
+  scale_y_continuous(
+    limits = c(40, 110),
+    breaks = seq(40, 105, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5),
+    minor_breaks = seq(2000, 2024, by = 1)
+  ) +
+  
+  coord_fixed(ratio = 1/4) +
+  
+  theme_minimal() +
+  
+  theme(
+    
+    #AXES
+    axis.title = element_blank(),   # Remove axis titles
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(margin = margin(r = 1)),
+    
+    #GRIDLINES
+    panel.grid.minor.y = element_blank(),  
+    # Keep x-axis minor gridlines but make them very light
+    # panel.grid.minor.x = element_line(color = "grey90"), 
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+    
+    # AXIS TICKS
+    # axis.ticks.x = element_line(),  # Show axis ticks
+    # axis.ticks.length = unit(2, "pt"), # Adjust tick length if needed
+    
+  )
+```
+
+#### 5)
+
+```{r}
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+#------BACKGROUND------  
+  # Add AQI threshold background colors
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 40, ymax = 50, 
+           fill = "#90EE90", alpha = 0.25) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 50, ymax = 100, 
+           fill = "#ffff00", alpha = 0.15) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 100, ymax = 110, 
+           fill = "#ff7e00", alpha = 0.15) +
+  
+  # Add category labels with improved typography
+  annotate("text", 
+           x = 2023, 
+           y = 45, 
+           label = "Good", 
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  annotate("text", 
+           x = 2023, 
+           y = 62, 
+           label = "Moderate",
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  annotate("text", 
+           x = 2023, 
+           y = 105, 
+           label = "Unhealthy for\nSensitive Groups", 
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  
+#------FOREGROUND------    
+  geom_line(linewidth = 0.7) + 
+  geom_point(size = 2) +
+  
+  scale_y_continuous(
+    limits = c(40, 110),
+    breaks = seq(40, 105, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5),
+    minor_breaks = seq(2000, 2024, by = 1)
+  ) +
+  
+  coord_fixed(ratio = 1/4) +
+  
+  theme_minimal() +
+  theme(
+    #TEXT
+    text = element_text(family = "Arial", color = "grey25"),
+    
+    #AXES
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text = element_text(size = 8),
+    
+    #GRIDLINES
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    # panel.grid.major.x = element_line(color = "grey90"),
+    
+    #PLOT BORDER
+    panel.border = element_rect(color = "grey90", fill = NA, linewidth = 0.5)
+ 
+#     panel.border = element_blank(),
+#     axis.line = element_line(color = "grey96"),
+#     # or individual axes
+#     axis.line.x = element_line(color = "grey96")
+)
 ```
 
 Notes: fix scaling, aspect, overlay EPA's air quality standards as a reference line.
@@ -123,7 +395,6 @@ common_pollutant_all <- bind_rows(common_pollutant_list)
 
 ```
 
-
 ### Visualize 1.0
 
 ```{r}
@@ -131,7 +402,7 @@ common_pollutant_all <- bind_rows(common_pollutant_list)
 #| echo: true
 #| message: false
 #| warning: false
-#| output: true
+#| output: false
 
 ggplot(common_pollutant_all, aes(x = main_pollutant)) +
   geom_bar() + 
@@ -140,7 +411,6 @@ ggplot(common_pollutant_all, aes(x = main_pollutant)) +
 ```
 
 Id love for this to be circles with size showing count...
-
 
 ```{r}
 # ---------- SUMMARIZE BY YEAR ---------
@@ -158,6 +428,7 @@ top_pollutants <- common_pollutant_all %>%
 ```
 
 ### Visualize 2.0
+
 ```{r}
 library(dplyr)
 library(packcircles)
@@ -194,6 +465,12 @@ circle_labels <- cbind(top_pollutants, circle_layout)
 ```
 
 ```{r}
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
+
 # -------- STEP 4: BASE PLOT(s) ----------
 
 #plot the circles
@@ -207,26 +484,25 @@ gg_circles <- ggplot() +
 
 
 # add nested circles
-  
+
 gg_circles_nested <- gg_circles +
-  geom_polygon(data = circle_vertices_border,
-               aes(x = x, y = y, group = id, fill = as.factor(id)),
-               colour = "black", alpha = 0.3) +
+ geom_polygon(data = circle_vertices_border,
+              aes(x = x, y = y, group = id, fill = as.factor(id)),
+            colour = "black", alpha = 0.3) +
   theme_void()
-
-gg_circles_nested 
-
 
 
 ```
 
-
 ```{r}
-
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
 
 # custom red colors:
 custom_red_palette <- c("#FFCCCC", "#FF9999", "#FF6666", "#FF3333", "#CC0000")
-
 
 gg_circles_with_labels <- gg_circles_nested +
   geom_text(data = circle_labels,
@@ -244,10 +520,73 @@ gg_circles_with_labels <- gg_circles_nested +
 gg_circles_with_labels
 
 
+```
 
+alt:
+
+```{r}
+
+pal_1 <- c("#FEF6D3", "#F3D03E", "#E67E52", "#E04D40", "#CC3333")  
+pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
+
+# Create the base visualization with the main circles
+gg_circles <- ggplot() +
+ # Draw the main circles
+ geom_polygon(data = circle_vertices, 
+              aes(x = x, y = y, group = id, fill = as.factor(id)), 
+              color = "white",          # add white borders
+              size = 0.2,              # thinner border 
+              alpha = 0.8) +           
+ theme_void() +                       
+ coord_equal()                       # ensure circles are perfectly round
+     
+
+# Add the nested circles layer
+gg_circles_nested <- gg_circles +
+
+ geom_polygon(data = circle_vertices_border,
+              aes(x = x, y = y, group = id, fill = as.factor(id)),
+              color = "white",        # match border color of main circles
+              size = 0.2,           
+              alpha = 0.5)            # more transparent for nested effect
+
+# Add text & style
+main_pollutant_circles <- gg_circles_nested +
+ # Add text labels inside the circles
+ geom_text(data = circle_labels,
+           aes(x = x, y = y, 
+               size = avg_count,      # text size varies with pollution count
+               label = main_pollutant), 
+           fontface = "bold",      
+           family = "Arial",          
+           color = "#2F2F2F") +       # dark grey 
+ scale_fill_manual(values = pal_2) +  # custom color palette
+ scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
+ 
+ theme_void() +                      
+ 
+ theme(
+  
+   text = element_text(family = "Arial"),
+   
+   plot.background = element_rect(fill = "white", color = NA), # white background
+
+   plot.margin = margin(20, 20, 20, 20),    # margins (padding)
+  
+   legend.position = "none"  # remove legend
+ )
+
+
+main_pollutant_circles
 ```
 
 ```{r}
+#| eval: false
+#| echo: false
+#| message: false
+#| warning: false
+#| output: false
+
 # Calculate Percentages:
 # Add a new column with the percentage of the average frequency of pollutants
 circle_labels$percent <- round(
@@ -283,8 +622,6 @@ gg_circles_nested +
   )
 
 ```
-
-
 
 # Individual Pollutants
 
@@ -506,6 +843,11 @@ Top 10 Zip Codes w highest mean PM 2.5:
 -   91406 Van Nuys
 
 ## Enviroscreen (spatial) - Tidy
+```{r}
+unincorp <- enviroscreen_sf %>% 
+  filter(zip =="91311")
+```
+
 
 ```{r}
 #| eval: true
@@ -519,28 +861,58 @@ Top 10 Zip Codes w highest mean PM 2.5:
 enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_final_shapefile.shp")) %>% 
   clean_names() 
 
-# ----- TIDY DATA ------
+#-------- Tidy Data-------------
+
+# Define excluded locations and identifiers
+excluded_locations <- c("Santa Clarita", "Palmdale", "Lancaster", "Acton", 
+                       "Agua Dulce", "Altadena", "Lake Los Angeles",
+                       "Leona Valley", "La Crescenta-Montrose")
+
+excluded_tracts <- c("6037911001", "6037910002", "6037403325", "6037104124",
+                     "6037920326", "6037930301", "6037910709", "6037920303")
+
+excluded_zips <- c("90265", "93535", "1733", "93552", "93532", "90704",
+                   "91384", "91387", "91390", "93510", "93536", "91351",
+                   "91011", "91355", "93551", "91342", "91381")
+
+# Tidy data with simplified filtering
 enviroscreen_sf <- enviroscreen_sf %>% 
-  # filter to only show LA County
   filter(county == "Los Angeles") %>% 
-  # select for the relevant columns
   select(tract, 
          zip,
          approx_loc,
-         ozone,
-         pm2_5,
          pm2_5_p,
-         diesel_pm,
-         traffic,
-         asthma,
-         poverty,
          geometry,  
-         county
-)
-
-
+         county) %>% 
+  filter(!approx_loc %in% excluded_locations) %>%
+  filter(!tract %in% excluded_tracts) %>%
+  filter(!zip %in% excluded_zips)
+  
 
 ```
+```{r}
+# plot w envirosreen
+es_plot <- ggplot() +
+  geom_sf(data = enviroscreen_sf, aes(fill = pm2_5_p), color = 'black', size = 1) +
+  scale_fill_distiller(palette = "OrRd", direction = 1) +
+  theme_minimal() +
+  labs(fill = "PM2.5 Percentile") +
+  theme(
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10),
+    axis.text = element_blank(),
+    axis.title = element_blank())+
+  theme_void()
+
+es_plot
+```
+
+
+## MY CENSUS IS BROKE
+```{r}
+
+```
+
 
 ## Tidy Census
 
@@ -551,7 +923,9 @@ enviroscreen_sf <- enviroscreen_sf %>%
 #| warning: false
 #| output: false
 
+library(sf)
 library(tidycensus)
+library(tidyverse)
 
 ### Step 1: Census data filtered to Los Angeles
 # all of LA county
@@ -559,7 +933,7 @@ la_census <- tidycensus::get_acs(
   state = "CA",
   county = "Los Angeles",
   geography = "tract",
-  variables = "B25004_001", ## Vacancy Status
+  variables = "B25004_001",
   geometry = TRUE,
   year = 2022
 )
@@ -578,6 +952,10 @@ la_census_filter <- la_census %>%
   filter(GEOID != "06037980004") %>%
   filter(!(NAME >= 9000 & NAME <= 9800))
 
+
+# write the data (cuz the census data is v fussy)
+# readr::write_csv(la_census_filter, here::here("data", "LA_census.csv"))
+
 ### Step 2: Enviroscreen data filtered to Los Angeles
 # read in and filter out areas we know we don't want
 enviroscreen_sf <- enviroscreen_sf %>%
@@ -590,6 +968,7 @@ enviroscreen_sf <- enviroscreen_sf %>%
   filter(tract != 6037930301) %>%
   filter(tract != 6037930200) %>%
   filter(tract != 6037920303)
+
 
 ```
 
@@ -777,7 +1156,7 @@ point_sources_plot
 
 ## Non-point Sources
 
-# Tidy
+### Tidy
 
 ```{r}
 #| eval: true
@@ -805,6 +1184,8 @@ major_nonpoint_sources <- nonpoint_sources %>%
   
 ```
 
+### Visualize by Source Type
+
 ```{r}
 #| eval: true
 #| echo: true
@@ -828,3 +1209,19 @@ nonpoint_sources_plot <- ggplot(major_nonpoint_sources, aes(x = reorder(scc_leve
 nonpoint_sources_plot
 
 ```
+
+# Q&A:
+
+1.  What have you learned about your data? Have any potentially interesting patterns emerged?
+
+    I've learned that the main pollutant trends closely follow the overall AQI trend, making it redundant to visualize multiple pollutants in the same way. This insight shifted my approach to a more structured, zoomed-in analysis. I plan to start with a broad view by showing the general air quality trend over time in Los Angeles. From there, I’ll highlight which pollutants contribute the most to poor air quality—particularly PM 2.5. Next, I’ll map PM 2.5 concentrations across Los Angeles to identify hotspots, incorporating environmental justice considerations. Finally, I’ll explore the sources of these pollutants to better understand their origins.
+
+    Overall air quality in Los Angeles has improved over time but appears to have plateaued in recent years. While reductions in pollution levels are evident, major air pollution events (such as the Bobcat Fire in 2020) stand out as significant spikes in the data.
+
+2.  In HW #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g. I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)?
+
+    Yes, I've made strides toward answering these questions, although my focus has shifted a bit since exploring the data. I now know the overall trends, the largest pollutants, where they are located.
+
+3.  What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges.
+
+    I foresee challenges in integrating multiple layers of analysis into a cohesive narrative. While each component—AQI trends, pollutant breakdown, spatial mapping, and source attribution—is insightful on its own, ensuring a cohesive story and maintaining clarity will be important.

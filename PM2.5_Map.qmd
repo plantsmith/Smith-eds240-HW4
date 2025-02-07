@@ -1,0 +1,123 @@
+---
+title: "PM2.5_Map"
+format: html
+editor: visual
+---
+# Import, Tidy, Wrangle
+```{r}
+#| message: false
+#| warning: false
+
+#libraries: 
+library(tidyverse)   # dplyr, purrr, etc.
+library(janitor)     # for clean_names()
+library(lubridate)   # for mdy(), etc
+library(here)        # for here()
+library(sf)          # spatial data
+library(doBy)        # for summaryBy()
+library(tidyverse)
+library(tigris)
+library(sf)
+library(RColorBrewer)
+library(scales)
+```
+## Bring in Data 
+
+```{r}
+# --------------------Spatial Data-----------------------
+# bring in enviroscreen shapefile
+enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_final_shapefile.shp")) %>% 
+  clean_names() 
+```
+
+
+## Wrangle
+```{r}
+#-------- Tidy Data-------------
+
+# Define excluded locations and identifiers
+excluded_locations <- c("Santa Clarita", "Palmdale", "Lancaster", "Acton", 
+                       "Agua Dulce", "Altadena", "Lake Los Angeles",
+                       "Leona Valley", "La Crescenta-Montrose")
+
+excluded_tracts <- c("6037911001", "6037910002", "6037403325", "6037104124",
+                     "6037920326", "6037930301", "6037910709", "6037920303")
+
+excluded_zips <- c("90265", "93535", "1733", "93552", "93532", "90704",
+                   "91384", "91387", "91390", "93510", "93536", "91351",
+                   "91011", "91355", "93551", "91342", "91381")
+
+# Tidy data with simplified filtering
+enviroscreen_sf <- enviroscreen_sf %>% 
+  filter(county == "Los Angeles") %>% 
+  select(tract, 
+         zip,
+         approx_loc,
+         pm2_5_p,
+         geometry,  
+         county) %>% 
+  filter(!approx_loc %in% excluded_locations) %>%
+  filter(!tract %in% excluded_tracts) %>%
+  filter(!zip %in% excluded_zips)
+  
+```
+
+```{r}
+# color palette: 
+pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
+
+bg <- "#E8ECF0" 
+```
+
+# Viz. 
+```{r}
+# plot w envirosreen
+es_plot <- ggplot() +
+  geom_sf(data = enviroscreen_sf, aes(fill = pm2_5_p), color = 'black', size = 0.1) +
+  scale_fill_gradientn(colors = pal_2,
+                      name = "PM2.5 Percentile") +
+  theme_void() +
+  theme(
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+es_plot
+```
+## Base Map
+```{r}
+#| output: false
+
+base_map <- ggplot(enviroscreen_sf) +
+  geom_sf(aes(fill = pm2_5_p), linewidth = 0.1) +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    plot.caption = element_text(face = "italic",
+                                margin = margin(t = 10, r = 5, b = 0, l = 0)),
+  )
+
+base_map 
+```
+
+```{r}
+pm_map <- base_map + scale_fill_gradientn(colors = pal_2,
+                       labels = label_percent(scale = 1), # add percentage sign to each of our values
+                       breaks = breaks_width(width = 10),
+                       # values = scales::rescale(x = c(43,99)) 
+) + 
+  guides(fill = guide_colorbar(barwidth = 25, 
+                               barheight = 0.75)) + #stretch out legend
+  theme(
+    legend.position = "top" ,
+    
+        # make the background grey 
+    plot.background = element_rect(fill = bg, 
+                                   color = bg)
+  
+  )
+
+pm_map 
+```
+

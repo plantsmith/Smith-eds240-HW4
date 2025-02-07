@@ -1,0 +1,309 @@
+---
+title: "Sources"
+format: html
+editor: visual
+---
+
+2020 Data: 
+https://awsedap.epa.gov/public/single/?appid=20230c40-026d-494e-903f-3f112761a208&sheet=5d3fdda7-14bc-4284-a9bb-cfd856b9348d&opt=ctxmenu,currsel
+
+```{r}
+#libraries: 
+library(tidyverse)   # dplyr, purrr, etc.
+library(janitor)     # for clean_names()
+library(lubridate)   # for mdy(), etc
+library(here)        # for here()
+library(dplyr)
+library(ggplot2)
+library(forcats)
+```
+
+```{r}
+source_pal <- c("#E67E52", "#E04D40")
+bg <- "#E8ECF0" 
+```
+
+# Point Sources
+## Load, Tidy, & Wrangle
+```{r}
+# bring in data and clean names
+point_sources <- read.csv(here("data/sources/facility_point_sources_2020.csv")) %>% 
+  clean_names()
+
+```
+
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+point_sources <- point_sources %>% 
+  filter(pollutant %in% c("PM2.5 Primary (Filt + Cond)", "PM2.5 Filterable")) %>%
+  mutate(emissions_tons = as.numeric(emissions_tons))
+```
+
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+# Top 50 emitters
+top_50_point_sources <- point_sources %>% 
+  slice_max(order_by = emissions_tons, n = 50)
+
+
+# Major emitters (100+ tons)
+major_point_sources <- point_sources %>% 
+  filter(emissions_tons >= 100)
+
+```
+
+## Visualize 
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+
+facility_summary <- top_50_point_sources %>% 
+  group_by(facility_type) %>% 
+  summarise(total_emissions = sum(emissions_tons, na.rm = TRUE)) %>% 
+  ungroup()
+
+point_sources_plot <- ggplot(facility_summary, 
+                             aes(x = reorder(facility_type,total_emissions), y = total_emissions)) +
+  geom_col() +  
+  coord_flip() +  
+  labs(
+    title = "PM2.5 Emissions - Point Sources (Facilities)",
+    x = "Facility Type",
+    y = "Emissions (Tons)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 6))
+
+point_sources_plot
+
+
+```
+
+# Non-point Sources
+
+## Load, Tidy, & Wrangle
+
+```{r}
+nonpoint_sources <- read.csv(here("data/sources/nonpoint_sources_2020.csv")) %>% 
+  clean_names()
+```
+
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+nonpoint_sources <- nonpoint_sources %>% 
+  filter(pollutant %in% c("PM2.5 Primary (Filt + Cond)", "PM2.5 Filterable")) %>% 
+  mutate(emissions_tons = as.numeric(emissions_tons)) %>% 
+  drop_na()
+
+# Top 50 emitters for nonpoint sources
+top_50_nonpoint_sources <- nonpoint_sources %>% 
+   slice_max(order_by = emissions_tons, n = 50)
+
+# Major emitters for nonpoint sources
+major_nonpoint_sources <- nonpoint_sources %>% 
+  filter(emissions_tons >= 100)
+  
+```
+
+### Visualize by Source Type
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: true
+library(dplyr)
+
+eis_sector_sum <- top_50_nonpoint_sources %>% 
+  group_by(eis_sector) %>% 
+  summarise(total_emissions = sum(emissions_tons, na.rm = TRUE)) %>% 
+  ungroup()
+
+ggplot(eis_sector_sum,
+       aes(x = reorder(eis_sector, total_emissions), y = total_emissions)) +
+  geom_col() +  
+  coord_flip() +  
+  labs(
+    title = "PM2.5 Total Emissions - Nonpoint by Sector",
+    x = "Non Point Sectors",
+    y = "Total Emissions (Tons)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 6))
+
+
+```
+
+# Combine Sources
+
+```{r}
+
+combined_sources <- bind_rows(
+  nonpoint_sources %>% 
+    mutate(source_type = "nonpoint",
+           # Use scc_level_2 as the pollution source name
+           pollution_source = eis_sector,
+           # Add empty columns for point-source-specific fields
+           site_name = NA,
+           eis_facility_id = NA,
+           facility_type = NA,
+           street_address = NA,
+           naics = NA,
+           lat_lon = NA,
+           longitude = NA,
+           latitude = NA),
+  
+  point_sources %>% 
+    mutate(source_type = "point",
+           # Use facility_type as the pollution source name
+           pollution_source = facility_type,
+           # Add empty columns for nonpoint-source-specific fields
+           scc_code = NA,
+           eis_sector = NA,
+           source_description = NA,
+           scc_level_1 = NA,
+           scc_level_2 = NA,
+           scc_level_3 = NA,
+           scc_level_4 = NA)
+)
+
+```
+
+```{r}
+combined_sources <- combined_sources %>% 
+  select(state_county,
+         pollutant,
+         emissions_tons,
+         source_type,
+         pollution_source)
+
+# Top 50 emitters for all sources
+top_50_sources <- combined_sources %>% 
+   slice_max(order_by = emissions_tons, n = 50)
+
+# Major emitters for all sources (greater than 100 tons)
+major_sources <- combined_sources %>% 
+  filter(emissions_tons >= 100)
+
+```
+
+Pollution Source (chr) ---> source type (chr) = emissions (num)
+
+```{r}
+
+top_10_sources <- top_50_sources %>% 
+  group_by(pollution_source, source_type) %>% 
+  summarise(total_emissions = sum(emissions_tons, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  slice_max(order_by = total_emissions, n = 10) %>% 
+  mutate(pollution_source = recode(pollution_source,
+  "Industrial Processes - Not Elsewhere Classified" = "Other Industrial Processes",
+  "Fuel Comb - Residential - Wood" = "Residential Wood Combustion",
+  "Mobile - On-Road non-Diesel Light Duty Vehicles" = "Light Duty Vehicles",
+  "Dust - Construction Dust" = "Construction Dust",
+  "Waste Disposal" = "Waste Disposal",
+  "Petroleum Refinery" = "Petroleum Refinery",
+  "Fires - Wildfires" = "Wildfires",
+  "Fuel Comb - Residential - Natural Gas" = "Residential Natural Gas Combustion",
+  "Miscellaneous Non-Industrial Not Elsewhere Classified" = "Other Non-Industrial",
+  "Dust - Unpaved Road Dust" = "Unpaved Road Dust"
+))
+
+```
+
+
+```{r}
+#viz
+ggplot(top_10_sources, 
+       aes(x = fct_reorder(pollution_source, total_emissions), 
+           y = total_emissions, 
+           fill = source_type)) +
+  geom_col() +
+  
+  geom_hline(yintercept = 100, linetype = "dashed", color = "black") +
+  
+  # wrap pollution_source labels to 30 characters
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+
+  coord_flip() +
+  
+  #add custom color palette
+  scale_fill_manual(values = source_pal) +
+  
+  # add tons to x axis labels 
+  scale_y_continuous(labels = function(x) paste0(x, " tons")) + 
+  
+  labs(fill = "Source Type")+
+  
+  theme_minimal() +
+  
+  theme(
+    
+    # axes
+     axis.title = element_blank(),   # Remove axis titles
+     
+    # grid panels 
+    # panel.grid.major.x = element_line(color = "gray90"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+     
+     
+  )
+
+    
+```
+
+
+FYI: 
+
+- **Industrial Processes – Not Elsewhere Classified:**  
+  Emissions from a variety of industrial facilities that don’t fit into more specific process categories.Think chemical processes or solvent use in manufacturing, production of plastics, etc.  
+
+- **Fuel Combustion – Residential (Wood):**  
+  Pollutants released from burning wood in residential heating (e.g., fireplaces and wood stoves).
+
+- **Mobile – On-Road Non-Diesel Light Duty Vehicles:**  
+  Emissions from gasoline-powered light duty vehicles operating on public roads.
+
+- **Dust – Construction Dust:**  
+  Particulates generated during construction activities such as demolition, earth moving, and site preparation.
+
+- **Waste Disposal:**  
+  Emissions associated with managing, incinerating, or decomposing waste, including landfill gases.
+
+- **Petroleum Refinery:**  
+  Pollutants produced during the processing of crude oil into fuels and other products.
+
+- **Fires – Wildfires:**  
+  Smoke and particulate emissions resulting from naturally occurring or human-caused wildfires.
+
+- **Fuel Combustion – Residential (Natural Gas):**  
+  Emissions from burning natural gas in residential settings for heating or cooking.
+
+- **Miscellaneous Non-Industrial – Not Elsewhere Classified:**  
+  A catch-all category for non-industrial emission sources...activities in commercial, institutional, or residential settings that are too minor or varied to warrant a dedicated category.
+
+- **Dust – Unpaved Road Dust:**  
+  Particulate matter generated by vehicles on unpaved roads that stir up and transport dust.

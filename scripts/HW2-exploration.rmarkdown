@@ -10,7 +10,11 @@ theme: Litera
 editor: visual
 ---
 
+
+
 Load Libraries
+
+
 
 ```{r}
 #| message: false
@@ -25,9 +29,13 @@ library(sf)          # spatial data
 library(doBy)        # for summaryBy()
 ```
 
+
+
 ## AQI
 
 ### Median AQI
+
+
 
 ```{r}
 #| eval: true
@@ -69,9 +77,13 @@ median_aqi_df <- bind_rows(median_aqi_list)
 
 ```
 
+
+
 ### Visualize
 
 ####1)
+
+
 
 ```{r}
 #| eval: false
@@ -104,7 +116,11 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
 
 ```
 
+
+
 #### 2)
+
+
 
 ```{r}
 ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
@@ -143,9 +159,13 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
   )
 ```
 
+
+
 nice colors: \# Add colored axis lines geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#F3D03E", linewidth = 2) + geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#9BC4A7", linewidth = 2) + geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E88D67", linewidth = 2) +
 
 #### 3)
+
+
 
 ```{r}
 #| eval: false
@@ -175,7 +195,11 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
 )
 ```
 
+
+
 #### 4)
+
+
 
 ```{r}
 #| eval: true
@@ -267,7 +291,11 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
   )
 ```
 
+
+
 #### 5)
+
+
 
 ```{r}
 #| eval: false
@@ -356,11 +384,15 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
 )
 ```
 
+
+
 Notes: fix scaling, aspect, overlay EPA's air quality standards as a reference line.
 
 Events: California Diesel Risk Reduction Program (2000), 2005: The SCAQMD developed Clean Fleet rules to reduce diesel exhaust, decomissioning coal plants (?), 2003, SCAQMD implemented "Check Before You Burn, 2020 spike due to wildfire (?)
 
 ### Main Pollutant in AQI
+
+
 
 ```{r}
 #| eval: true
@@ -395,7 +427,11 @@ common_pollutant_all <- bind_rows(common_pollutant_list)
 
 ```
 
+
+
 ### Visualize 1.0
+
+
 
 ```{r}
 #| eval: true
@@ -410,7 +446,11 @@ ggplot(common_pollutant_all, aes(x = main_pollutant)) +
 
 ```
 
+
+
 Id love for this to be circles with size showing count...
+
+
 
 ```{r}
 # ---------- SUMMARIZE BY YEAR ---------
@@ -427,7 +467,11 @@ top_pollutants <- common_pollutant_all %>%
 
 ```
 
+
+
 ### Visualize 2.0
+
+
 
 ```{r}
 library(dplyr)
@@ -522,7 +566,11 @@ gg_circles_with_labels
 
 ```
 
+
+
 alt:
+
+
 
 ```{r}
 
@@ -623,6 +671,8 @@ gg_circles_nested +
 
 ```
 
+
+
 # Individual Pollutants
 
 ## PM 2.5 Single Pollutant
@@ -630,6 +680,8 @@ gg_circles_nested +
 After exploring the data, I dont think I will use these datasets.
 
 ### Tidy
+
+
 
 ```{r}
 #| eval: true
@@ -666,7 +718,11 @@ PM2_5 <- PM2_5_df %>%
 
 ```
 
+
+
 ### Visualize by Year
+
+
 
 ```{r}
 #| eval: true
@@ -694,7 +750,11 @@ ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
 
 ```
 
+
+
 ### Visualize by Month
+
+
 
 ```{r}
 #| eval: true
@@ -727,9 +787,13 @@ ggplot(monthly_PM2_5, aes(x = month, y = monthly_mean_pm2_5)) +
   theme_bw()
 ```
 
+
+
 ## Ozone
 
 ### Tidy
+
+
 
 ```{r}
 #| eval: true
@@ -758,7 +822,11 @@ annual_ozone <- annual_ozone %>%
 
 ```
 
+
+
 ### Visualize
+
+
 
 ```{r}
 #| eval: true
@@ -774,9 +842,13 @@ ggplot(annual_ozone, aes(x = year, y = days_over_070)) +
 #this is cool but id rather have it in buckets of unhealthy for sensi, unhealthy, and v unhealthy - stacked bar/area
 ```
 
+
+
 # Census and Socioeconomic Data
 
 ## Enviroscreen (tabular) - Tidy
+
+
 
 ```{r}
 #| eval: true
@@ -829,6 +901,8 @@ top_10_pm2_5 <- top_10_pm2_5  %>%
 
 ```
 
+
+
 Top 10 Zip Codes w highest mean PM 2.5:
 
 -   91335 Reseda
@@ -843,6 +917,7 @@ Top 10 Zip Codes w highest mean PM 2.5:
 -   91406 Van Nuys
 
 ## Enviroscreen (spatial) - Tidy
+
 
 ```{r}
 unincorp <- enviroscreen_sf %>% 
@@ -906,13 +981,22 @@ es_plot <- ggplot() +
 es_plot
 ```
 
+
+
+
 ## MY CENSUS IS BROKE
+
 
 ```{r}
 
 ```
 
+
+
+
 ## Tidy Census
+
+
 
 ```{r}
 #| eval: true
@@ -984,7 +1068,11 @@ enviroscreen_sf <- st_transform(enviroscreen_sf, st_crs(la_census_filter))
 final_enviroscreen <- st_filter(enviroscreen_sf, la_census_filter)
 ```
 
+
+
 ### Visualize
+
+
 
 ```{r}
 #| eval: true
@@ -1007,6 +1095,8 @@ ggplot() +
   theme_void()
 ```
 
+
+
 Using percentile PM2.5 as opposed to raw PM 2.5 shows more of an EJ POV, as the percentile is a relative ranking of PM2.5 concentrations compared to other census tracts statewide. (ex: A percentile of 90 means the area has higher PM2.5 pollution than 90% of other census tracts in California.)
 
 # Pollution Sources
@@ -1014,6 +1104,8 @@ Using percentile PM2.5 as opposed to raw PM 2.5 shows more of an EJ POV, as the 
 ## Point Sources
 
 ### Tidy
+
+
 
 ```{r}
 #| eval: true
@@ -1055,7 +1147,11 @@ point_sources_sf <- st_filter(point_sources_sf, final_enviroscreen)
 
 ```
 
+
+
 ### Visualize Spatially
+
+
 
 ```{r}
 #| eval: true
@@ -1071,7 +1167,11 @@ ggplot() +
 
 ```
 
+
+
 There are just so many point sources, so I'm going to try mapping just the top what it I mapped just the top 50 emitters.
+
+
 
 ```{r}
 #| eval: true
@@ -1125,7 +1225,11 @@ ggplot() +
 
 ```
 
+
+
 ### Visualize by Source Type
+
+
 
 ```{r}
 #| eval: true
@@ -1152,9 +1256,13 @@ point_sources_plot
 
 ```
 
+
+
 ## Non-point Sources
 
 ### Tidy
+
+
 
 ```{r}
 #| eval: true
@@ -1182,7 +1290,11 @@ major_nonpoint_sources <- nonpoint_sources %>%
   
 ```
 
+
+
 ### Visualize by Source Type
+
+
 
 ```{r}
 #| eval: true
@@ -1208,6 +1320,8 @@ nonpoint_sources_plot
 
 ```
 
+
+
 # Q&A:
 
 1.  What have you learned about your data? Have any potentially interesting patterns emerged?
@@ -1223,3 +1337,4 @@ nonpoint_sources_plot
 3.  What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges.
 
     I foresee challenges in integrating multiple layers of analysis into a cohesive narrative. While each component—AQI trends, pollutant breakdown, spatial mapping, and source attribution—is insightful on its own, ensuring a cohesive story and maintaining clarity will be important.
+

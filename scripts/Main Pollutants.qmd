@@ -1,0 +1,163 @@
+---
+title: "Main Pollutant"
+format: html
+editor: visual
+---
+
+# Main Pollutants
+
+```{r}
+#| message: false
+#| warning: false
+
+#libraries: 
+library(tidyverse)   # dplyr, purrr, etc.
+library(janitor)     # for clean_names()
+library(lubridate)   # for mdy(), etc
+library(here)        # for here()
+library(doBy)        # for summaryBy()
+```
+
+## Import and Wrangle Data
+
+```{r}
+# -------- S E T  U P  L O O P  --------
+common_pollutant_list <- map(years, ~ {
+  
+  # file path
+  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
+  
+  # -------- R E A D  I N  D A T A --------
+  read_csv(aqi_file_path) %>%
+    clean_names() %>%
+    
+    # character to date
+    mutate(date = mdy(date)) %>%
+    
+    # extract year
+    mutate(year = year(date)) %>%
+    
+    select(year, main_pollutant)
+
+})
+
+# Combine all common pollutant calculations into one data frame
+common_pollutant_all <- bind_rows(common_pollutant_list)
+
+# ---------- SUMMARIZE BY YEAR ---------
+
+# count occurrences of pollutants for the year
+top_pollutants <- common_pollutant_all %>% 
+  group_by(year, main_pollutant) %>%
+  summarize(count = n(), .groups = "drop") %>% 
+
+  group_by(main_pollutant) %>%
+  summarize(avg_count = mean(count), .groups = "drop")
+
+```
+
+## Compute circle layout
+
+```{r}
+library(dplyr)
+library(packcircles)
+library(ggplot2)
+
+# -------- STEP 1:Compute circle layout----------
+
+# circleProgressiveLayoutcalculates the positions and sizes of circles to create a non-overlapping
+circle_layout <- circleProgressiveLayout(top_pollutants$avg_count, sizetype = "area")
+
+# Add a small gap between circles
+circle_layout$radius <- circle_layout$radius * 0.95
+
+# Add coordinates back to the pollutant data
+circle_data <- cbind(top_pollutants, circle_layout)
+
+# create vertices for circle polygons
+circle_vertices <- circleLayoutVertices(circle_layout, npoints = 50)
+
+# -------- STEP 2: ADD NESTED CIRCLES ----------
+# Generate radius, x, and y coordinates for nested circles
+circle_layout_border <- circle_layout
+circle_layout_border$radius <- circle_layout$radius * 0.95
+
+# Create vertices for nested circles
+circle_vertices_border <- circleLayoutVertices(circle_layout_border, npoints = 50)
+
+# # -------- STEP 3: JOIN TABLES TO ADD LABELS ----------
+# 
+# Combine the pollutant data with circles (center coordinates and radius)
+circle_labels <- cbind(top_pollutants, circle_layout)
+
+
+```
+
+### Viz:
+
+```{r}
+
+pal_1 <- c("#FEF6D3", "#F3D03E", "#E67E52", "#E04D40", "#CC3333")  
+pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
+bg <- "#E8ECF0" 
+
+```
+
+```{r}
+# -------- STEP 4: BASE PLOT(s) ----------
+
+# Create the base plots
+gg_circles <- ggplot() +
+ # Draw the main circles
+ geom_polygon(data = circle_vertices, 
+              aes(x = x, y = y, group = id, fill = as.factor(id)), 
+              color = "white",          # add white borders
+              size = 0.2,              # thinner border 
+              alpha = 0.9) +           
+ theme_void() +     
+ coord_equal()
+# coord_equal(expand = TRUE, xlim = c(-14.75, 14.75), ylim = c(-14.75, 14.75))  # size of cirlces                     # ensure circles are perfectly round
+     
+
+# Add the nested circles layer
+gg_circles_nested <- gg_circles +
+
+ geom_polygon(data = circle_vertices_border,
+              aes(x = x, y = y, group = id, fill = as.factor(id)),
+              color = "white",        # match border color of main circles
+              size = 0.2,           
+              alpha = 0.5)            # more transparent for nested effect
+
+```
+
+```{r}
+
+# Add text & style
+main_pollutant_circles <- gg_circles_nested +
+ # Add text labels inside the circles
+ geom_text(data = circle_labels,
+           aes(x = x, y = y, 
+               size = avg_count,      # text size varies with pollution count
+               label = main_pollutant), 
+           fontface = "bold",      
+           family = "Arial",          
+           color = "#2F2F2F") +       # dark grey 
+ scale_fill_manual(values = pal_2) +  # custom color palette
+ scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
+ 
+ theme_void() +                      
+ 
+ theme(
+  
+   text = element_text(family = "Arial"),
+   
+   plot.background = element_rect(fill = bg, color = bg), # white background
+
+   plot.margin = margin(20, 20, 20, 20),    # margins (padding)
+  
+   legend.position = "none" # remove legend
+)
+
+
+main_pollutant_circles
+```

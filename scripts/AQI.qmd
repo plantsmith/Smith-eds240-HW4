@@ -1,0 +1,338 @@
+---
+title: "AQI"
+format: html
+editor: visual
+---
+
+```{r}
+#| message: false
+#| warning: false
+
+#libraries: 
+library(tidyverse)   # dplyr, purrr, etc.
+library(janitor)     # for clean_names()
+library(lubridate)   # for mdy(), etc
+library(here)        # for here()
+library(doBy)        # for summaryBy()
+
+
+bg <- "#E8ECF0" 
+```
+
+# AQI
+
+## Median AQI
+
+```{r}
+#| message: false
+#| warning: false
+
+# data ranges from 2000 - 2024
+years <- 2000:2024
+
+# -------- S E T  U P  L O O P  --------
+median_aqi_list <- map(years, ~ {
+  
+      # build the file path
+  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
+  
+# -------- R E A D  I N  D A T A --------
+  read_csv(aqi_file_path) %>%
+    clean_names() %>%
+    
+# -------- T I D Y--------
+      #transform date from a character to a date
+    mutate(date = mdy(date)) %>%
+    
+      #extract year
+    mutate(year = year(date)) %>% 
+
+      #calculate median AQI
+    group_by(year) %>%
+    summarize(
+      median_aqi = median(overall_aqi_value, na.rm = TRUE),
+      .groups = "drop")
+    
+})
+
+# combine into one data frame
+median_aqi_df <- bind_rows(median_aqi_list)
+
+```
+
+### Viz. 1:
+
+```{r}
+#| message: false
+#| warning: false
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+ geom_line() + 
+  geom_point() +
+  labs(x = " ", y = "Median AQI") +
+  
+    scale_y_continuous(
+    limits = c(60, 105),
+    breaks = seq(60, 100, by = 10)
+ ) +
+  
+    scale_x_continuous(
+    limits = c(2000, 2024), # Set axis range
+    breaks = seq(2000, 2024, by = 2), 
+  ) +
+  
+  theme_minimal() +
+  #remove gridlines
+  theme(
+    # panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+    )
+```
+
+### Viz. 2:
+
+```{r}
+#| message: false
+#| warning: false
+
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+  geom_line() + 
+  geom_point() +
+  
+  scale_y_continuous(
+    limits = c(1, 110),
+    breaks = seq(0, 100, by = 10)
+ ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024), # Set axis range
+    breaks = seq(2000, 2024, by = 2),  
+  ) +
+
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+)
+```
+
+### Viz. 3
+
+```{r}
+aqi_plot <- ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  labs(x = " ", y = "Median AQI") +
+  
+  # Add colored axis lines
+  geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#88B589", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#F3D03E", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E67E52", linewidth = 2) +
+  
+  geom_line() + 
+  geom_point() +
+  
+  scale_y_continuous(
+    limits = c(50, 105),
+    breaks = seq(50, 100, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5)
+  ) +
+  
+  theme_minimal() +
+  
+  theme(
+    panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    
+    axis.line.y = element_blank(),
+    
+    axis.title = element_blank(),   # Remove axis titles
+    
+            # make the background black 
+    plot.background = element_rect(fill = bg, 
+                                   color = bg)
+  
+
+  )
+
+aqi_plot
+```
+
+### Viz. 4:
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+#------BACKGROUND------  
+  # Add AQI threshold background colors
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 40, ymax = 50, 
+           fill = "#88B589", alpha = 0.3) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 50, ymax = 100, 
+           fill = "#F3D03E", alpha = 0.2) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 100, ymax = 110, 
+           fill = "#E67E52", alpha = 0.2) +
+  
+  
+  # Add category labels
+  # GOOD
+  annotate("text", 
+           x = 2023, 
+           y = 45, 
+           label = "Good", 
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  # MODERATE
+  annotate("text", 
+           x = 2023, 
+           y = 62, 
+           label = "Moderate",
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  # UNHEALTHY
+  annotate("text", 
+           x = 2023, 
+           y = 105, 
+           label = "Unhealthy for\nSensitive Groups", 
+           hjust = 1,
+           fontface = "plain",
+           family = "Arial",
+           size = 3.5) +
+  
+#------FOREGROUND------    
+    
+  geom_line() + 
+  geom_point() +
+  
+  scale_y_continuous(
+    limits = c(40, 110),
+    breaks = seq(40, 105, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5),
+    minor_breaks = seq(2000, 2024, by = 1)
+  ) +
+  
+  coord_fixed(ratio = 1/4) +
+  
+  theme_minimal() +
+  
+  theme(
+    
+    #AXES
+    axis.title = element_blank(),   # Remove axis titles
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(margin = margin(r = 1)),
+    
+    #GRIDLINES
+    panel.grid.minor.y = element_blank(),  
+    # Keep x-axis minor gridlines but make them very light
+    # panel.grid.minor.x = element_line(color = "grey90"), 
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+    
+    # AXIS TICKS
+    # axis.ticks.x = element_line(),  # Show axis ticks
+    # axis.ticks.length = unit(2, "pt"), # Adjust tick length if needed
+    
+  )
+```
+
+### Viz. 5
+
+```{r}
+#| message: false
+#| warning: false
+
+ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  
+#------BACKGROUND------  
+  # Add AQI threshold background colors
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 40, ymax = 50, 
+           fill = "#90EE90", alpha = 0.25) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 50, ymax = 100, 
+           fill = "#ffff00", alpha = 0.15) +
+  annotate("rect", xmin = 2000, xmax = 2024, ymin = 100, ymax = 110, 
+           fill = "#ff7e00", alpha = 0.15) +
+  
+  # Add category labels with improved typography
+  annotate("text", 
+           x = 2023, 
+           y = 45, 
+           label = "Good", 
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  annotate("text", 
+           x = 2023, 
+           y = 62, 
+           label = "Moderate",
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  annotate("text", 
+           x = 2023, 
+           y = 105, 
+           label = "Unhealthy for\nSensitive Groups", 
+           hjust = 1,
+           family = "Arial",
+           size = 3,
+           color = "grey25") +
+  
+#------FOREGROUND------    
+  geom_line(linewidth = 0.7) + 
+  geom_point(size = 2) +
+  
+  scale_y_continuous(
+    limits = c(40, 110),
+    breaks = seq(40, 105, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5),
+    minor_breaks = seq(2000, 2024, by = 1)
+  ) +
+  
+  coord_fixed(ratio = 1/4) +
+  
+  theme_minimal() +
+  theme(
+    #TEXT
+    text = element_text(family = "Arial", color = "grey25"),
+    
+    #AXES
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text = element_text(size = 8),
+    
+    #GRIDLINES
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    # panel.grid.major.x = element_line(color = "grey90"),
+    
+    #PLOT BORDER
+    axis.line.x = element_line(color = "grey90"),
+    axis.line.y = element_line(color = "grey90")
+)
+```

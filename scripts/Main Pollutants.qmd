@@ -16,11 +16,67 @@ library(janitor)     # for clean_names()
 library(lubridate)   # for mdy(), etc
 library(here)        # for here()
 library(doBy)        # for summaryBy()
+
+####
+# Display the discrete "Sunset3" palette
+paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+# Extract the full palette as a vector using the same name
+sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+
+# Choose colors
+custom_pal <- sunset_pal [c(3, 3, 3, 3, 3)]
 ```
 
 ## Import and Wrangle Data
 
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
+# data ranges from 2000 - 2024
+years <- 2000:2024
+
+# -------- S E T  U P  L O O P  --------
+median_aqi_list <- map(years, ~ {
+  
+      # build the file path
+  aqi_file_path <- here("data/aqi_daily", paste0("aqidaily_", .x, ".csv"))
+  
+# -------- R E A D  I N  D A T A --------
+  read_csv(aqi_file_path) %>%
+    clean_names() %>%
+    
+# -------- T I D Y--------
+      #transform date from a character to a date
+    mutate(date = mdy(date)) %>%
+    
+      #extract year
+    mutate(year = year(date)) %>% 
+
+      #calculate median AQI
+    group_by(year) %>%
+    summarize(
+      median_aqi = median(overall_aqi_value, na.rm = TRUE),
+      .groups = "drop")
+    
+})
+
+# combine into one data frame
+median_aqi_df <- bind_rows(median_aqi_list)
+```
+
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 # -------- S E T  U P  L O O P  --------
 common_pollutant_list <- map(years, ~ {
   
@@ -96,10 +152,10 @@ circle_labels <- cbind(top_pollutants, circle_layout)
 ### Viz:
 
 ```{r}
-
-pal_1 <- c("#FEF6D3", "#F3D03E", "#E67E52", "#E04D40", "#CC3333")  
-pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
-bg <- "#E8ECF0" 
+# 
+# pal_1 <- c("#FEF6D3", "#F3D03E", "#E67E52", "#E04D40", "#CC3333")  
+# pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
+# bg <- "#E8ECF0" 
 
 ```
 
@@ -111,7 +167,7 @@ gg_circles <- ggplot() +
  # Draw the main circles
  geom_polygon(data = circle_vertices, 
               aes(x = x, y = y, group = id, fill = as.factor(id)), 
-              color = "white",          # add white borders
+              color = "black",          # add white borders
               size = 0.2,              # thinner border 
               alpha = 0.9) +           
  theme_void() +     
@@ -124,7 +180,7 @@ gg_circles_nested <- gg_circles +
 
  geom_polygon(data = circle_vertices_border,
               aes(x = x, y = y, group = id, fill = as.factor(id)),
-              color = "white",        # match border color of main circles
+              color = "black",        # match border color of main circles
               size = 0.2,           
               alpha = 0.5)            # more transparent for nested effect
 
@@ -142,7 +198,7 @@ main_pollutant_circles <- gg_circles_nested +
            fontface = "bold",      
            family = "Arial",          
            color = "#2F2F2F") +       # dark grey 
- scale_fill_manual(values = pal_2) +  # custom color palette
+ scale_fill_manual(values = sunset_pal ) +  # custom color palette
  scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
  
  theme_void() +                      
@@ -151,7 +207,7 @@ main_pollutant_circles <- gg_circles_nested +
   
    text = element_text(family = "Arial"),
    
-   plot.background = element_rect(fill = bg, color = bg), # white background
+   # plot.background = element_rect(fill = bg, color = bg), # white background
 
    plot.margin = margin(20, 20, 20, 20),    # margins (padding)
   
@@ -160,4 +216,44 @@ main_pollutant_circles <- gg_circles_nested +
 
 
 main_pollutant_circles
+```
+
+TRY DONUT
+
+```{r}
+# Prepare the data for the donut chart using top_pollutants
+donut_data <- top_pollutants %>% 
+  # Calculate the fraction of each pollutant and make new columns
+  mutate(
+    fraction = avg_count / sum(avg_count),
+    percent  = round(fraction * 100), # caluclaute the percent from the fration
+    # Create a label that shows the pollutant and its percentage
+    label    = paste0(main_pollutant, "\n", percent, "%") # reminder: "\n" give you a space
+  ) %>% 
+  # Arrange in descending order of main pollutant
+  arrange(desc(main_pollutant)) %>% 
+  
+  # Compute cumulative values for the donut slices
+  mutate(
+    # cumulative sum (cumsum) gives us the upper boundary 
+    ymax          = cumsum(fraction), 
+   #lag() function shifts the values of ymax down by one row
+   # For the very first row, there is no previous value, so default = 0 is used
+    ymin          = lag(ymax, default = 0), 
+   # if i want to place the labels at the midpoint of the slice - optional
+   # calculates the midpoint of each slice by averaging the ymin and ymax.
+    labelPosition = (ymax + ymin) / 2
+  )
+
+# GG PLOT :
+ggplot(donut_data, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = main_pollutant)) +
+  geom_rect(color = "grey98") +  # borders between slices
+  geom_label(aes(x = 3.5, y = labelPosition, label = label, color = "white"), size = 3) +
+  coord_polar(theta = "y") +
+  xlim(c(2, 4)) +              # donut thickness
+  scale_fill_manual(values = sunset_pal) +  #color pal
+  theme_void() +          
+  theme(legend.position = "none")
+
+
 ```

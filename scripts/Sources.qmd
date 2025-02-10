@@ -4,8 +4,7 @@ format: html
 editor: visual
 ---
 
-2020 Data: 
-https://awsedap.epa.gov/public/single/?appid=20230c40-026d-494e-903f-3f112761a208&sheet=5d3fdda7-14bc-4284-a9bb-cfd856b9348d&opt=ctxmenu,currsel
+2020 Data: https://awsedap.epa.gov/public/single/?appid=20230c40-026d-494e-903f-3f112761a208&sheet=5d3fdda7-14bc-4284-a9bb-cfd856b9348d&opt=ctxmenu,currsel
 
 ```{r}
 #libraries: 
@@ -16,22 +15,20 @@ library(here)        # for here()
 library(dplyr)
 library(ggplot2)
 library(forcats)
-```
 
-```{r}
-source_pal <- c("#E67E52", "#E04D40")
-bg <- "#E8ECF0" 
+
 ```
 
 # Point Sources
+
 ## Load, Tidy, & Wrangle
+
 ```{r}
 # bring in data and clean names
 point_sources <- read.csv(here("data/sources/facility_point_sources_2020.csv")) %>% 
   clean_names()
 
 ```
-
 
 ```{r}
 #| eval: true
@@ -43,7 +40,6 @@ point_sources <- point_sources %>%
   filter(pollutant %in% c("PM2.5 Primary (Filt + Cond)", "PM2.5 Filterable")) %>%
   mutate(emissions_tons = as.numeric(emissions_tons))
 ```
-
 
 ```{r}
 #| eval: true
@@ -62,7 +58,7 @@ major_point_sources <- point_sources %>%
 
 ```
 
-## Visualize 
+## Visualize
 
 ```{r}
 #| eval: true
@@ -101,7 +97,6 @@ point_sources_plot
 nonpoint_sources <- read.csv(here("data/sources/nonpoint_sources_2020.csv")) %>% 
   clean_names()
 ```
-
 
 ```{r}
 #| eval: true
@@ -207,7 +202,7 @@ major_sources <- combined_sources %>%
 
 ```
 
-Pollution Source (chr) ---> source type (chr) = emissions (num)
+Pollution Source (chr) ---\> source type (chr) = emissions (num)
 
 ```{r}
 
@@ -231,79 +226,122 @@ top_10_sources <- top_50_sources %>%
 
 ```
 
+```{r}
+#PLAY W COLOR: 
+library(paletteer)
+
+# # view names of supported pkgs/palettes ----
+# View(palettes_d_names) #discrete 
+# View(palettes_c_names) #continuous
+
+# # Display the discrete "eschscholzia" palette
+# paletteer::paletteer_d("calecopal::eschscholzia")
+# # Extract the full palette as a vector
+# full_pal <- paletteer::paletteer_d("calecopal::eschscholzia")
+# # Choose colors
+# custom_pal <- full_pal[c(1, 4)]
+
+####
+# # Display the discrete "canary" palette
+# paletteer::paletteer_d("calecopal::canary")
+# # Extract the full palette as a vectorz
+# full_pal <- paletteer::paletteer_d("calecopal::canary")
+# # Choose colors
+# custom_pal_1 <- full_pal[c(1, 4)]
+
+####
+# Display the discrete "Sunset3" palette
+paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+# Extract the full palette as a vector using the same name
+sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+
+# Choose colors
+custom_pal <- sunset_pal [c(5, 2)]
+
+```
 
 ```{r}
-#viz
+library(ggplot2)
+library(stringr)
+library(paletteer)
+
 ggplot(top_10_sources, 
        aes(x = fct_reorder(pollution_source, total_emissions), 
            y = total_emissions, 
            fill = source_type)) +
   geom_col() +
-  
   geom_hline(yintercept = 100, linetype = "dashed", color = "black") +
-  
-  # wrap pollution_source labels to 30 characters
+  # Wrap pollution_source labels to 25 characters
   scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
-
   coord_flip() +
-  
-  #add custom color palette
-  scale_fill_manual(values = source_pal) +
-  
-  # add tons to x axis labels 
+  # Use custom palette from paletteer
+  scale_fill_manual(values = custom_pal) +  
   scale_y_continuous(labels = function(x) paste0(x, " tons")) + 
-  
-  labs(fill = "Source Type")+
-  
+  labs(fill = "Source Type") +
   theme_minimal() +
-  
   theme(
-    
-    # axes
-     axis.title = element_blank(),   # Remove axis titles
-     
-    # grid panels 
-    # panel.grid.major.x = element_line(color = "gray90"),
+    axis.title = element_blank(),  # Remove axis titles
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
     panel.grid.minor.y = element_blank(),
-    panel.grid.major.y = element_blank(),
-     
-     
+    panel.grid.major.y = element_blank()
   )
 
     
 ```
 
+```{r}
+ggplot(top_10_sources, 
+       aes(x = fct_reorder(pollution_source, total_emissions), 
+           y = total_emissions, 
+           fill = source_type)) +
+  geom_col() +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "black") +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  # Reverse the y-axis to make bars go down
+  scale_y_reverse(labels = function(x) paste0(x, " tons")) +
+  scale_fill_manual(values = custom_pal) +  
+  labs(fill = "Source Type") +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
 
-FYI: 
+FYI:
 
-- **Industrial Processes – Not Elsewhere Classified:**  
-  Emissions from a variety of industrial facilities that don’t fit into more specific process categories.Think chemical processes or solvent use in manufacturing, production of plastics, etc.  
+-   **Industrial Processes – Not Elsewhere Classified:**\
+    Emissions from a variety of industrial facilities that don’t fit into more specific process categories.Think chemical processes or solvent use in manufacturing, production of plastics, etc.
 
-- **Fuel Combustion – Residential (Wood):**  
-  Pollutants released from burning wood in residential heating (e.g., fireplaces and wood stoves).
+-   **Fuel Combustion – Residential (Wood):**\
+    Pollutants released from burning wood in residential heating (e.g., fireplaces and wood stoves).
 
-- **Mobile – On-Road Non-Diesel Light Duty Vehicles:**  
-  Emissions from gasoline-powered light duty vehicles operating on public roads.
+-   **Mobile – On-Road Non-Diesel Light Duty Vehicles:**\
+    Emissions from gasoline-powered light duty vehicles operating on public roads.
 
-- **Dust – Construction Dust:**  
-  Particulates generated during construction activities such as demolition, earth moving, and site preparation.
+-   **Dust – Construction Dust:**\
+    Particulates generated during construction activities such as demolition, earth moving, and site preparation.
 
-- **Waste Disposal:**  
-  Emissions associated with managing, incinerating, or decomposing waste, including landfill gases.
+-   **Waste Disposal:**\
+    Emissions associated with managing, incinerating, or decomposing waste, including landfill gases.
 
-- **Petroleum Refinery:**  
-  Pollutants produced during the processing of crude oil into fuels and other products.
+-   **Petroleum Refinery:**\
+    Pollutants produced during the processing of crude oil into fuels and other products.
 
-- **Fires – Wildfires:**  
-  Smoke and particulate emissions resulting from naturally occurring or human-caused wildfires.
+-   **Fires – Wildfires:**\
+    Smoke and particulate emissions resulting from naturally occurring or human-caused wildfires.
 
-- **Fuel Combustion – Residential (Natural Gas):**  
-  Emissions from burning natural gas in residential settings for heating or cooking.
+-   **Fuel Combustion – Residential (Natural Gas):**\
+    Emissions from burning natural gas in residential settings for heating or cooking.
 
-- **Miscellaneous Non-Industrial – Not Elsewhere Classified:**  
-  A catch-all category for non-industrial emission sources...activities in commercial, institutional, or residential settings that are too minor or varied to warrant a dedicated category.
+-   **Miscellaneous Non-Industrial – Not Elsewhere Classified:**\
+    A catch-all category for non-industrial emission sources...activities in commercial, institutional, or residential settings that are too minor or varied to warrant a dedicated category.
 
-- **Dust – Unpaved Road Dust:**  
-  Particulate matter generated by vehicles on unpaved roads that stir up and transport dust.
+-   **Dust – Unpaved Road Dust:**\
+    Particulate matter generated by vehicles on unpaved roads that stir up and transport dust.

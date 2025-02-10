@@ -3,7 +3,9 @@ title: "PM2.5_Map"
 format: html
 editor: visual
 ---
+
 # Import, Tidy, Wrangle
+
 ```{r}
 #| message: false
 #| warning: false
@@ -21,7 +23,8 @@ library(sf)
 library(RColorBrewer)
 library(scales)
 ```
-## Bring in Data 
+
+## Bring in Data
 
 ```{r}
 # --------------------Spatial Data-----------------------
@@ -30,8 +33,22 @@ enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_
   clean_names() 
 ```
 
+```{r}
+####
+# Display the discrete "Sunset3" palette
+paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+# Extract the full palette as a vector using the same name
+sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+
+# Choose colors
+custom_pal <- sunset_pal [c(5, 2)]
+
+```
 
 ## Wrangle
+
 ```{r}
 #-------- Tidy Data-------------
 
@@ -43,7 +60,7 @@ excluded_locations <- c("Santa Clarita", "Palmdale", "Lancaster", "Acton",
 excluded_tracts <- c("6037911001", "6037910002", "6037403325", "6037104124",
                      "6037920326", "6037930301", "6037910709", "6037920303")
 
-excluded_zips <- c("90265", "93535", "1733", "93552", "93532", "90704",
+excluded_zips <- c("90265", "93535", "93552", "93532", "90704",
                    "91384", "91387", "91390", "93510", "93536", "91351",
                    "91011", "91355", "93551", "91342", "91381")
 
@@ -69,8 +86,15 @@ pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")
 bg <- "#E8ECF0" 
 ```
 
-# Viz. 
+# Viz.
+
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+#| output: false
+
 # plot w envirosreen
 es_plot <- ggplot() +
   geom_sf(data = enviroscreen_sf, aes(fill = pm2_5_p), color = 'black', size = 0.1) +
@@ -82,10 +106,15 @@ es_plot <- ggplot() +
     legend.text = element_text(size = 10)
   )
 
-es_plot
 ```
+
 ## Base Map
+
 ```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
 #| output: false
 
 base_map <- ggplot(enviroscreen_sf) +
@@ -97,12 +126,10 @@ base_map <- ggplot(enviroscreen_sf) +
     plot.caption = element_text(face = "italic",
                                 margin = margin(t = 10, r = 5, b = 0, l = 0)),
   )
-
-base_map 
 ```
 
 ```{r}
-pm_map <- base_map + scale_fill_gradientn(colors = pal_2,
+pm_map <- base_map + scale_fill_gradientn(colors = sunset_pal,
                        labels = label_percent(scale = 1), # add percentage sign to each of our values
                        breaks = breaks_width(width = 10),
                        # values = scales::rescale(x = c(43,99)) 
@@ -111,13 +138,8 @@ pm_map <- base_map + scale_fill_gradientn(colors = pal_2,
                                barheight = 0.75)) + #stretch out legend
   theme(
     legend.position = "top" ,
-    
-        # make the background grey 
-    plot.background = element_rect(fill = bg, 
-                                   color = bg)
   
   )
 
 pm_map 
 ```
-

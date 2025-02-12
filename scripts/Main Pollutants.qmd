@@ -27,6 +27,21 @@ sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
 
 # Choose colors
 custom_pal <- sunset_pal [c(3, 3, 3, 3, 3)]
+
+#CC7E62
+
+smog_pal <- c("#79AAB6", 
+              "#B0C7C1", 
+              "#E3AC79", 
+              "#CC7E62",
+              "#B77B70")
+
+
+smog_pal2 <- c("#79AAB6", 
+              "#B0C7C1", 
+              "#DFAF75", 
+              "#DE8635",
+              "#DF674F")
 ```
 
 ## Import and Wrangle Data
@@ -246,14 +261,20 @@ donut_data <- top_pollutants %>%
   )
 
 # GG PLOT :
-ggplot(donut_data, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = main_pollutant)) +
+# Corrected GGPlot code for the donut chart:
+donut <- ggplot(donut_data, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = main_pollutant)) +
   geom_rect(color = "grey98") +  # borders between slices
-  geom_label(aes(x = 3.5, y = labelPosition, label = label, color = "white"), size = 3) +
+  geom_label(aes(x = 3.5, y = labelPosition, label = label), color = "black", size = 3) +
   coord_polar(theta = "y") +
   xlim(c(2, 4)) +              # donut thickness
-  scale_fill_manual(values = sunset_pal) +  #color pal
+  scale_fill_manual(values = smog_pal2) +  # color palette
   theme_void() +          
   theme(legend.position = "none")
+
+donut
+
+ggsave("donut.pdf", donut, width = 10, height = 6)
+
 
 
 ```

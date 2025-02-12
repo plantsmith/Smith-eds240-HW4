@@ -10,18 +10,58 @@ editor: visual
 #| message: false
 #| warning: false
 
+# -------------- SETUP ------------
+
 #libraries: 
-library(tidyverse)   # dplyr, purrr, etc.
-library(janitor)     # for clean_names()
-library(lubridate)   # for mdy(), etc
-library(here)        # for here()
-library(sf)          # spatial data
-library(doBy)        # for summaryBy()
+library(tidyverse)  
+library(janitor)     
 library(tidyverse)
-library(tigris)
-library(sf)
-library(RColorBrewer)
 library(scales)
+library(showtext) # allows us to import google fonts 
+library(glue)
+library(ggtext)
+library(sf)
+library(here)
+
+#......................import Google fonts.......................
+# `name` is the name of the font as it appears in Google Fonts
+# `family` is the user-specified id that you'll use to apply a font in your ggpplot
+font_add_google(name = "Montserrat", family = "mont")
+font_add_google(name = "Open Sans", family = "open_sans")
+
+
+
+#now we need to 'turn show text on'
+#......enable {showtext} rendering for all newly opened GDs......
+showtext_auto()
+
+```
+
+```{r}
+#create pollution color palette(s): 
+
+smog_pal <- c("#79AAB6", 
+              "#B0C7C1", 
+              "#C2A078", 
+              "#E3AC79", 
+              "#B77B70")
+
+
+smog_pal2 <- c("#79AAB6", 
+              "#B0C7C1", 
+              "#DFAF75", 
+              "#DE8635",
+              "#DF674F")
+
+
+
+####
+# # Display the discrete "Sunset3" palette
+# paletteer::paletteer_d("NineteenEightyR::sunset3")
+
+# Extract the full palette as a vector using the same name
+sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
+
 ```
 
 ## Bring in Data
@@ -33,19 +73,6 @@ enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_
   clean_names() 
 ```
 
-```{r}
-####
-# Display the discrete "Sunset3" palette
-paletteer::paletteer_d("NineteenEightyR::sunset3")
-
-# Extract the full palette as a vector using the same name
-sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
-
-
-# Choose colors
-custom_pal <- sunset_pal [c(5, 2)]
-
-```
 
 ## Wrangle
 
@@ -79,13 +106,6 @@ enviroscreen_sf <- enviroscreen_sf %>%
   
 ```
 
-```{r}
-# color palette: 
-pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
-
-bg <- "#E8ECF0" 
-```
-
 # Viz.
 
 ```{r}
@@ -98,7 +118,7 @@ bg <- "#E8ECF0"
 # plot w envirosreen
 es_plot <- ggplot() +
   geom_sf(data = enviroscreen_sf, aes(fill = pm2_5_p), color = 'black', size = 0.1) +
-  scale_fill_gradientn(colors = pal_2,
+  scale_fill_gradientn(colors = smog_pal,
                       name = "PM2.5 Percentile") +
   theme_void() +
   theme(
@@ -119,27 +139,60 @@ es_plot <- ggplot() +
 
 base_map <- ggplot(enviroscreen_sf) +
   geom_sf(aes(fill = pm2_5_p), linewidth = 0.1) +
-  theme_void() +
-  theme(
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    plot.caption = element_text(face = "italic",
-                                margin = margin(t = 10, r = 5, b = 0, l = 0)),
-  )
+  theme_void()
 ```
 
 ```{r}
-pm_map <- base_map + scale_fill_gradientn(colors = sunset_pal,
+pm_map <- base_map +
+# adjust colors:
+ scale_fill_gradientn(colors = smog_pal2,
                        labels = label_percent(scale = 1), # add percentage sign to each of our values
                        breaks = breaks_width(width = 10),
                        # values = scales::rescale(x = c(43,99)) 
 ) + 
+  # update look of legend: 
   guides(fill = guide_colorbar(barwidth = 25, 
                                barheight = 0.75)) + #stretch out legend
-  theme(
-    legend.position = "top" ,
   
-  )
+labs(
+  title = "Mapping PM2.5 Pollution in Los Angeles",
+  subtitle = "Census tract percentiles relative to all California—<br>darker shades indicate higher pollution",
+  caption = "Data: CalEnviroscreen, 2025"
+) +
 
-pm_map 
+  # customize theme: 
+theme(
+  plot.title.position = "plot", # shift title to the left
+  plot.title = element_text(family = "mont",
+                            face = "bold",
+                            size = 18,
+                            color = "black"),  # Fixed here by closing the parenthesis
+  plot.subtitle = ggtext::element_textbox(family = "open_sans",
+                             size = 11.5,
+                             color = "black",
+                             margin = margin(t = 2, r = 0, b = 6, l = 0)),  # move in clockwise to top, right, bottom, left
+  plot.caption = ggtext::element_textbox(family = "open_sans",
+                             face = "italic",
+                             color = "black",
+                             margin = margin(t = 15, r = 0, b = 0, l = 0)),
+  
+  legend.position = "bottom",  # move legend to the bottom
+  legend.title = element_blank(),  # no legend title
+  
+  # margins
+  plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
+)
+
+pm_map
+```
+
+```{r}
+ggsave(
+  filename = here::here("images", "pm_map.png"),
+  plot = pm_map,
+  device = "png",
+  width = 8, 
+  height = 7,
+  unit = "in"
+)
 ```

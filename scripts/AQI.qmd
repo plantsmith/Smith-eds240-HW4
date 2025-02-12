@@ -14,9 +14,25 @@ library(janitor)     # for clean_names()
 library(lubridate)   # for mdy(), etc
 library(here)        # for here()
 library(doBy)        # for summaryBy()
+library(scales)
+library(showtext) # allows us to import google fonts 
+library(glue)
+library(ggtext)
+library(sf)
+library(here)
+
+#......................import Google fonts.......................
+# `name` is the name of the font as it appears in Google Fonts
+# `family` is the user-specified id that you'll use to apply a font in your ggpplot
+font_add_google(name = "Montserrat", family = "mont")
+font_add_google(name = "Open Sans", family = "open_sans")
 
 
-bg <- "#E8ECF0" 
+
+#now we need to 'turn show text on'
+#......enable {showtext} rendering for all newly opened GDs......
+showtext_auto()
+
 ```
 
 # AQI
@@ -117,51 +133,138 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
 )
 ```
 
-### Viz. 3
+### Viz. 3 \<3
+
+```{r}
+#subtitle: 
+subtitle <- glue::glue("
+    Tracking median Air Quality Index (AQI) over time:<br>
+    <span style='color:#88B589;'>**Good**</span>, 
+    <span style='color:#F3D03E;'>**Moderate**</span>, 
+    <span style='color:#E67E52;'>**Unhealthy for Sensitive Groups**</span>"
+)
+
+```
+
 
 ```{r}
 aqi_plot <- ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
-  labs(x = " ", y = "Median AQI") +
   
-  # Add colored axis lines
-  geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#88B589", linewidth = 2) +
-  geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#F3D03E", linewidth = 2) +
-  geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E67E52", linewidth = 2) +
+  # ADD COLOR TO AXIS LINES
+  geom_segment(aes(x = 1999.65, xend = 1999.65, y = 50, yend = 60), color = "#88B589", linewidth = 2) +
+  geom_segment(aes(x = 1999.65, xend = 1999.65, y = 60, yend = 100), color = "#F3D03E", linewidth = 2) +
+  geom_segment(aes(x = 1999.65, xend = 1999.65, y = 100, yend = 105), color = "#E67E52", linewidth = 2) +
   
   geom_line() + 
   geom_point() +
   
+# ADD ANNOTATIONS  
+  # Low Emission Standards 2004
+  annotate(
+    geom = "text",
+    x = 2000.6,
+    y = 80,
+    label = "LEV II Vehicle\nStandards Take Effect",
+    size = 3,
+    color = "black",
+    hjust = "inward"
+  ) +
+  # add arrow
+  annotate(
+    geom = "segment",
+    x = 2004, xend = 2004,
+    y = 89, yend = 81,
+  ) +  
+  
+  # Advanced Clean Cars Program & Cap-and-Trade Begin 2012
+  annotate(
+    geom = "text",
+    x = 2015.65,
+    y = 70.75,
+    label = "Advanced Clean\nCars Program Begins",
+    size = 3,
+    color = "black",
+    hjust = 1  # Left-aligned text
+  ) +
+  # add arrow
+annotate(
+    geom = "segment",  
+    x = 2012, xend = 2012, 
+    y = 73, yend = 83,  
+  ) +
+  # Bobcat Fire 2020
+  annotate(
+    geom = "text",
+    x = 2022.21,
+    y = 93,
+    label = "Bobcat Fire",
+    size = 3,
+    color = "black",
+    hjust = "inward"
+  ) +
+  # add arrow
+  annotate(
+    geom = "segment",
+    x = 2020, xend = 2020,
+    y = 91.5, yend = 86.65,
+  ) +
+  
+
+# BACK TO PLOTTING  
   scale_y_continuous(
     limits = c(50, 105),
     breaks = seq(50, 100, by = 10)
   ) +
   
   scale_x_continuous(
-    limits = c(2000, 2024),
-    breaks = seq(2000, 2024, by = 5)
+    limits = c(1999, 2024),
+    breaks = c(seq(2000, 2020, by = 5), 2024),
   ) +
+  
+# TITLES, ETC.  
+labs(
+  title = "Los Angeles Air Quality Trends (2000–2024)",
+  subtitle = subtitle,
+  caption = "Data source: EPA (2025)"
+
+    ) +
   
   theme_minimal() +
   
+# CUSTOMIZE THEME
   theme(
-    panel.grid.major.y = element_line(color = "gray90"),
+    plot.title.position = "plot", # shift title to the left
+    plot.title = element_text(family = "mont",
+                            face = "bold",
+                            size = 18,
+                            color = "black"),  # Fixed here by closing the parenthesis
+    plot.subtitle = ggtext::element_textbox(family = "open_sans",
+                             size = 11.5,
+                             color = "black",
+                             margin = margin(t = 2, r = 0, b = 6, l = 0)),  # move in clockwise to top, right, bottom, left
+  plot.caption = ggtext::element_textbox(family = "open_sans",
+                             face = "italic",
+                             color = "black",
+                             margin = margin(t = 15, r = 0, b = 0, l = 0)),
+  
+    # panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
     panel.grid.minor.x = element_blank(),
     panel.grid.major.x = element_blank(),
     
     axis.line.y = element_blank(),
-    
+    axis.text.y = element_blank(), # remove y axis text
     axis.title = element_blank(),   # Remove axis titles
     
-            # make the background black 
-    plot.background = element_rect(fill = bg, 
-                                   color = bg)
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
   
-
   )
 
 aqi_plot
 ```
+
+FYI Lev II = California **tightened emissions limits** on passenger vehicles, requiring major reductions in **smog-forming pollutants (NOx and PM2.5)**.
 
 ### Viz. 4:
 
@@ -335,4 +438,127 @@ ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
     axis.line.x = element_line(color = "grey90"),
     axis.line.y = element_line(color = "grey90")
 )
+```
+
+```{r}
+aqi_plot <- ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+  labs(x = " ", y = "Median AQI") +
+  
+  # ADD COLOR TO AXIS LINES
+  geom_segment(aes(x = 2000, xend = 2000, y = 50, yend = 60), color = "#88B589", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 60, yend = 100), color = "#F3D03E", linewidth = 2) +
+  geom_segment(aes(x = 2000, xend = 2000, y = 100, yend = 105), color = "#E67E52", linewidth = 2) +
+  
+  # PLOT LINE AND POINTS
+  geom_line() + 
+  geom_point() +
+
+  # HIGHLIGHTED POINTS (2004, 2012, 2020)
+  geom_point(data = median_aqi_df %>% filter(year %in% c(2004, 2012, 2020)), 
+             aes(x = year, y = median_aqi), 
+             color = "darkgray", size = 3.5, stroke = 1) +  
+  
+# ADD ANNOTATIONS  
+  ## Bobcat Fire 2020
+  annotate(
+    geom = "text",
+    x = 2024,
+    y = 94.5,
+    label = "2020: Bobcat Fire",
+    size = 3,
+    color = "black",
+    hjust = "right"
+  ) +
+  annotate(
+    geom = "curve",
+    x = 2023, xend = 2020,
+    y = 91, yend = 87,
+    curvature = 0.15,
+    arrow = arrow(length = unit(0.3, "cm"))
+  ) +
+
+  ## LEV II Vehicle Standards 2004
+  annotate(
+    geom = "text",
+    x = 2004.5, 
+    y = 90,
+    label = "2004: LEV II Standards\nStricter vehicle emission rules",
+    size = 3,
+    color = "black",
+    hjust = "left"
+  ) +
+  annotate(
+    geom = "curve",
+    x = 2002, xend = 2004,
+    y = 85, yend = 88.85,
+    curvature = -0.15,
+    arrow = arrow(length = unit(0.3, "cm"))
+  ) +  
+
+  ## Advanced Clean Cars Program (2012)
+  annotate(
+    geom = "text",
+    x = 2012.5, 
+    y = 72,
+    label = "2012: Advanced Clean Cars\n& Cap-and-Trade Begin",
+    size = 3,
+    color = "black",
+    hjust = "left"
+  ) +
+  annotate(
+    geom = "curve",  
+    x = 2011, xend = 2012, 
+    y = 75, yend = 81,  
+    curvature = -0.12, 
+    arrow = arrow(length = unit(0.3, "cm")) 
+  ) +
+
+# BACK TO PLOTTING  
+  scale_y_continuous(
+    limits = c(50, 105),
+    breaks = seq(50, 100, by = 10)
+  ) +
+  
+  scale_x_continuous(
+    limits = c(2000, 2024),
+    breaks = seq(2000, 2024, by = 5)
+  ) +
+  
+# TITLES, ETC.  
+labs(
+  title = "Los Angeles Air Quality Trends (2000–2024)",
+  subtitle = "Tracking median Air Quality Index (AQI) over time with key policy milestones",
+  caption = "Data source: EPA (2025)"
+) +
+  
+  theme_minimal() +
+  
+# CUSTOMIZE THEME
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_text(family = "mont",
+                              face = "bold",
+                              size = 18,
+                              color = "black"),
+    plot.subtitle = ggtext::element_textbox(family = "open_sans",
+                               size = 11.5,
+                               color = "black",
+                               margin = margin(t = 2, r = 0, b = 6, l = 0)),  
+    plot.caption = ggtext::element_textbox(family = "open_sans",
+                               face = "italic",
+                               color = "black",
+                               margin = margin(t = 15, r = 0, b = 0, l = 0)),
+    panel.grid.major.y = element_line(color = "gray90"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.line.y = element_blank(),
+    axis.title = element_blank(),
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
+  )
+
+aqi_plot
+
+
+
 ```

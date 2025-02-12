@@ -6,6 +6,8 @@ editor: visual
 
 2020 Data: https://awsedap.epa.gov/public/single/?appid=20230c40-026d-494e-903f-3f112761a208&sheet=5d3fdda7-14bc-4284-a9bb-cfd856b9348d&opt=ctxmenu,currsel
 
+<https://www.epa.gov/air-emissions-inventories/national-emissions-inventory-nei>
+
 ```{r}
 #libraries: 
 library(tidyverse)   # dplyr, purrr, etc.
@@ -15,6 +17,23 @@ library(here)        # for here()
 library(dplyr)
 library(ggplot2)
 library(forcats)
+
+
+```
+
+```{r}
+
+smog_pal <- c("#79AAB6", 
+              "#B0C7C1", 
+              "#C2A078", 
+              "#E3AC79", 
+              "#B77B70")
+
+
+
+smog_sub_pal <- smog_pal[c(4,5)]
+
+
 
 
 ```
@@ -227,42 +246,6 @@ top_10_sources <- top_50_sources %>%
 ```
 
 ```{r}
-#PLAY W COLOR: 
-library(paletteer)
-
-# # view names of supported pkgs/palettes ----
-# View(palettes_d_names) #discrete 
-# View(palettes_c_names) #continuous
-
-# # Display the discrete "eschscholzia" palette
-# paletteer::paletteer_d("calecopal::eschscholzia")
-# # Extract the full palette as a vector
-# full_pal <- paletteer::paletteer_d("calecopal::eschscholzia")
-# # Choose colors
-# custom_pal <- full_pal[c(1, 4)]
-
-####
-# # Display the discrete "canary" palette
-# paletteer::paletteer_d("calecopal::canary")
-# # Extract the full palette as a vectorz
-# full_pal <- paletteer::paletteer_d("calecopal::canary")
-# # Choose colors
-# custom_pal_1 <- full_pal[c(1, 4)]
-
-####
-# Display the discrete "Sunset3" palette
-paletteer::paletteer_d("NineteenEightyR::sunset3")
-
-# Extract the full palette as a vector using the same name
-sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
-
-
-# Choose colors
-custom_pal <- sunset_pal [c(5, 2)]
-
-```
-
-```{r}
 library(ggplot2)
 library(stringr)
 library(paletteer)
@@ -277,7 +260,7 @@ ggplot(top_10_sources,
   scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
   coord_flip() +
   # Use custom palette from paletteer
-  scale_fill_manual(values = custom_pal) +  
+  scale_fill_manual(values = smog_sub_pal) +  
   scale_y_continuous(labels = function(x) paste0(x, " tons")) + 
   labs(fill = "Source Type") +
   theme_minimal() +
@@ -302,7 +285,7 @@ ggplot(top_10_sources,
   scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
   # Reverse the y-axis to make bars go down
   scale_y_reverse(labels = function(x) paste0(x, " tons")) +
-  scale_fill_manual(values = custom_pal) +  
+  scale_fill_manual(values = smog_pal) +  
   labs(fill = "Source Type") +
   theme_minimal() +
   theme(

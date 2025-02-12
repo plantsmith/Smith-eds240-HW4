@@ -15,3 +15,6 @@ pm_map <- base_map + scale_fill_gradientn(colors = sunset_pal,
   )
 
 pm_map
+
+#ggsave in output folder
+ggsave(filename = "output/pm_map.png",

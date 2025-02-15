@@ -42,6 +42,8 @@ editor: visual
 
 <https://www.instagram.com/p/CAszZuIBxQQ/?hl=en>
 
+<https://eds-240-data-viz.github.io/course-materials/lecture-slides/lecture5.1-good-viz-slides.html#/dual-axes-alt-prioritize>
+
 5.  Hand-draw your anticipated visualizations, then take a photo of your drawing(s) and embed it in your rendered `.qmd` file – **note** that these are not *exploratory* visualizations, but rather your plan for your final visualizations that you will eventually polish and submit with HW #4. You should have:
 
 ```         

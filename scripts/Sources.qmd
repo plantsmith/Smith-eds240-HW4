@@ -9,14 +9,33 @@ editor: visual
 <https://www.epa.gov/air-emissions-inventories/national-emissions-inventory-nei>
 
 ```{r}
+#| message: false
+#| warning: false
+
 #libraries: 
 library(tidyverse)   # dplyr, purrr, etc.
 library(janitor)     # for clean_names()
 library(lubridate)   # for mdy(), etc
 library(here)        # for here()
-library(dplyr)
-library(ggplot2)
-library(forcats)
+library(doBy)        # for summaryBy()
+library(scales)
+library(showtext) # allows us to import google fonts 
+library(glue)
+library(ggtext)
+library(sf)
+library(here)
+
+#......................import Google fonts.......................
+# `name` is the name of the font as it appears in Google Fonts
+# `family` is the user-specified id that you'll use to apply a font in your ggpplot
+font_add_google(name = "Montserrat", family = "mont")
+font_add_google(name = "Open Sans", family = "open_sans")
+
+
+
+#now we need to 'turn show text on'
+#......enable {showtext} rendering for all newly opened GDs......
+showtext_auto()
 
 
 ```
@@ -246,55 +265,106 @@ top_10_sources <- top_50_sources %>%
 ```
 
 ```{r}
-library(ggplot2)
-library(stringr)
-library(paletteer)
-
-ggplot(top_10_sources, 
-       aes(x = fct_reorder(pollution_source, total_emissions), 
-           y = total_emissions, 
-           fill = source_type)) +
-  geom_col() +
-  geom_hline(yintercept = 100, linetype = "dashed", color = "black") +
-  # Wrap pollution_source labels to 25 characters
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
-  coord_flip() +
-  # Use custom palette from paletteer
-  scale_fill_manual(values = smog_sub_pal) +  
-  scale_y_continuous(labels = function(x) paste0(x, " tons")) + 
-  labs(fill = "Source Type") +
-  theme_minimal() +
-  theme(
-    axis.title = element_blank(),  # Remove axis titles
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    panel.grid.major.y = element_blank()
-  )
-
-    
+#subtitle: 
+subtitle <- glue::glue("
+    Analyzing Major Emission Contributors Across  <span style='color:#B77B70;'>**Point**</span> and <span style='color:#E3AC79;'>**Non-Point Sources**</span> in Los Angeles"
+)
 ```
+
 
 ```{r}
 ggplot(top_10_sources, 
-       aes(x = fct_reorder(pollution_source, total_emissions), 
-           y = total_emissions, 
-           fill = source_type)) +
-  geom_col() +
-  geom_hline(yintercept = 100, linetype = "dashed", color = "black") +
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
-  # Reverse the y-axis to make bars go down
-  scale_y_reverse(labels = function(x) paste0(x, " tons")) +
-  scale_fill_manual(values = smog_pal) +  
-  labs(fill = "Source Type") +
+       aes(x = fct_reorder(pollution_source, total_emissions),  
+           y = total_emissions,  
+           fill = source_type)) + 
+       
+
+  geom_col() +  
+  
+  # Adding a horizontal line at y = 100 to highlight major source threshold
+  geom_hline(yintercept = 100, linetype = "dashed", color = "black") +  # Horizontal line at y = 100
+  
+  # # rectangle -- i dont think I need this
+  #   annotate(
+  #   geom = "rect",
+  #   xmin = 7.25, xmax = 9.75,
+  #   ymin = 500, ymax = 1125,
+  #   alpha = 0.5,
+  #   fill = "gray70", color = "black"
+  # ) +
+  #text
+annotate(
+  geom = "text",
+  x = 3,
+  y = 1030,
+  label = str_wrap("The EPA defines 100 tons as the threshold for a major source of pollution", width = 25),
+  size = 3,
+  color = "black",
+  hjust = 0
+) +
+# arrow
+  annotate(
+    geom = "curve",
+    x = 3, xend = 5,   # Closer to the line horizontally
+    y = 1010, yend = 145,  # Lower the arrow to be closer to the threshold line
+    curvature = -0.1,  # Slight curve
+    arrow = arrow(length = unit(0.3, "cm"))
+  ) +
+
+  # Wrapping x-axis labels to 25 characters for better readability
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +  
+  
+ 
+  coord_flip() +  
+  
+  scale_fill_manual(values = smog_sub_pal) + 
+  
+  # Format y-axis labels to include "tons"
+  scale_y_continuous(labels = function(x) paste0(x, " tons")) +  # Adding "tons" to y-axis labels
+  
+# LABS---
+  labs(
+    title = "Top Sources of PM2.5 Pollution in 2020",  # Main title
+    subtitle = subtitle,  # Subtitle (assuming `subtitle` is a variable)
+    caption = "Data source: EPA (2025)",  # Caption with data source
+    fill = "Source Type"  # Label for the legend
+  ) +
+  
   theme_minimal() +
+  
+# THEME ---
   theme(
-    axis.title = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    panel.grid.major.y = element_blank()
-  )
+    axis.title = element_blank(),  # Removing axis titles (x and y)
+    panel.grid.major.x = element_blank(),  
+    panel.grid.minor.x = element_blank(),  
+    panel.grid.minor.y = element_blank(),  
+    panel.grid.major.y = element_blank(),  
+    
+
+    plot.title.position = "plot",  # Shifting the title to the left
+    plot.title = element_text(family = "mont",  
+                              face = "bold", 
+                              size = 18,  
+                              color = "black"), 
+    
+    # Customizing subtitle appearance
+    plot.subtitle = ggtext::element_textbox(family = "open_sans",  
+                                           size = 11.5,  
+                                           color = "black", 
+                                           margin = margin(t = 2, r = 0, b = 6, l = 0)),  
+    
+    # Customizing caption appearance
+    plot.caption = ggtext::element_textbox(family = "open_sans",
+                                           face = "italic",  
+                                           color = "black",  
+                                           margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+    
+    # Adjusting plot margins for overall spacing
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10), 
+    
+    # Customizing legend behavior - plot.legend isnt working
+    legend.position = "none",  
+)
 ```
 
 FYI:

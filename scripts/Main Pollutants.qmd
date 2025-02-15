@@ -7,6 +7,8 @@ editor: visual
 # Main Pollutants
 
 ```{r}
+# SET UP
+
 #| message: false
 #| warning: false
 
@@ -16,17 +18,30 @@ library(janitor)     # for clean_names()
 library(lubridate)   # for mdy(), etc
 library(here)        # for here()
 library(doBy)        # for summaryBy()
+library(scales)
+library(showtext) # allows us to import google fonts 
+library(glue)
+library(ggtext)
+library(sf)
+library(here)
 
-####
-# Display the discrete "Sunset3" palette
-paletteer::paletteer_d("NineteenEightyR::sunset3")
+#......................import Google fonts.......................
+# `name` is the name of the font as it appears in Google Fonts
+# `family` is the user-specified id that you'll use to apply a font in your ggpplot
+font_add_google(name = "Montserrat", family = "mont")
+font_add_google(name = "Open Sans", family = "open_sans")
 
-# Extract the full palette as a vector using the same name
-sunset_pal <- paletteer::paletteer_d("NineteenEightyR::sunset3")
 
 
-# Choose colors
-custom_pal <- sunset_pal [c(3, 3, 3, 3, 3)]
+#now we need to 'turn show text on'
+#......enable {showtext} rendering for all newly opened GDs......
+showtext_auto()
+```
+
+
+```{r}
+#| message: false
+#| warning: false
 
 #CC7E62
 
@@ -42,6 +57,16 @@ smog_pal2 <- c("#79AAB6",
               "#DFAF75", 
               "#DE8635",
               "#DF674F")
+
+custom_smog_pal <- c(
+ "Ozone"= "#79AAB6",
+ "PM10" = "#B0C7C1", 
+ "CO" = "#DFAF75",  
+ "NO2" = "#DE8635",    
+ "PM2.5" = "#DF674F"      
+)
+
+
 ```
 
 ## Import and Wrangle Data
@@ -167,14 +192,6 @@ circle_labels <- cbind(top_pollutants, circle_layout)
 ### Viz:
 
 ```{r}
-# 
-# pal_1 <- c("#FEF6D3", "#F3D03E", "#E67E52", "#E04D40", "#CC3333")  
-# pal_2 <- c("#FFF2D1", "#F3D03E", "#EB865A", "#E35745", "#D42E2E")  
-# bg <- "#E8ECF0" 
-
-```
-
-```{r}
 # -------- STEP 4: BASE PLOT(s) ----------
 
 # Create the base plots
@@ -182,7 +199,7 @@ gg_circles <- ggplot() +
  # Draw the main circles
  geom_polygon(data = circle_vertices, 
               aes(x = x, y = y, group = id, fill = as.factor(id)), 
-              color = "black",          # add white borders
+              color = "grey90",          # add white borders
               size = 0.2,              # thinner border 
               alpha = 0.9) +           
  theme_void() +     
@@ -195,7 +212,7 @@ gg_circles_nested <- gg_circles +
 
  geom_polygon(data = circle_vertices_border,
               aes(x = x, y = y, group = id, fill = as.factor(id)),
-              color = "black",        # match border color of main circles
+              color = "grey90",        # match border color of main circles
               size = 0.2,           
               alpha = 0.5)            # more transparent for nested effect
 
@@ -203,34 +220,61 @@ gg_circles_nested <- gg_circles +
 
 ```{r}
 
-# Add text & style
 main_pollutant_circles <- gg_circles_nested +
- # Add text labels inside the circles
- geom_text(data = circle_labels,
-           aes(x = x, y = y, 
-               size = avg_count,      # text size varies with pollution count
-               label = main_pollutant), 
-           fontface = "bold",      
-           family = "Arial",          
-           color = "#2F2F2F") +       # dark grey 
- scale_fill_manual(values = sunset_pal ) +  # custom color palette
- scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
- 
- theme_void() +                      
- 
- theme(
+  # Add text labels inside the circles
+  geom_text(data = circle_labels,
+            aes(x = x, y = y, 
+                size = avg_count,      # text size varies with pollution count
+                label = main_pollutant), 
+            fontface = "bold",
+            family = "mont",          
+            color = "#2F2F2F") +   
+  scale_fill_manual(values = smog_pal2) +  # custom color palette
+  scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
   
-   text = element_text(family = "Arial"),
-   
-   # plot.background = element_rect(fill = bg, color = bg), # white background
+  theme_void() +  
 
-   plot.margin = margin(20, 20, 20, 20),    # margins (padding)
-  
-   legend.position = "none" # remove legend
-)
+  # LABS ---  
+  labs(
+    title = "Pollutant Distribution",  # Main chart title
+    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+    caption = "Data: EPA, 2025"  # Data source
+  ) +  
 
+  # CUSTOMIZE THEME ---
+  theme(
+    legend.position = "none",  
+    plot.title.position = "plot", 
+    plot.caption.position = "plot",  
+    
+    # title
+    plot.title = element_text(family = "mont",  # Use "mont" font
+                              face = "bold",  # Make it bold
+                              size = 18,  # Increase font size
+                              color = "black",  
+                              hjust = 0,  # Align to the far left
+                              margin = margin(b = 5)),  # Add spacing below title
+    
+    # subtitle
+    plot.subtitle = element_text(family = "open_sans",  
+                                 size = 11.5,  
+                                 color = "black",
+                                 hjust = 0,  
+                                 margin = margin(b = 10)), 
+    
+    # caption
+    plot.caption = element_text(family = "open_sans",
+                                face = "italic",
+                                color = "black",
+                                hjust = 1,  
+                                margin = margin(t = 15)),  # Add spacing above caption
+    
+    # overall plot margins
+    plot.margin = margin(t = 20, r = 20, b = 20, l = 20)  # Ensure spacing from edges
+  )
 
 main_pollutant_circles
+
 ```
 
 TRY DONUT
@@ -260,21 +304,250 @@ donut_data <- top_pollutants %>%
     labelPosition = (ymax + ymin) / 2
   )
 
-# GG PLOT :
-# Corrected GGPlot code for the donut chart:
-donut <- ggplot(donut_data, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = main_pollutant)) +
-  geom_rect(color = "grey98") +  # borders between slices
-  geom_label(aes(x = 3.5, y = labelPosition, label = label), color = "black", size = 3) +
-  coord_polar(theta = "y") +
-  xlim(c(2, 4)) +              # donut thickness
-  scale_fill_manual(values = smog_pal2) +  # color palette
-  theme_void() +          
-  theme(legend.position = "none")
+```
+
+
+```{r}
+# Create the donut chart
+donut <- ggplot(donut_data, 
+                aes(ymax = ymax,   # Upper boundary of the slice
+                    ymin = ymin,   # Lower boundary 
+                    xmax = 4,      # Outer radius of the donut chart
+                    xmin = 3,      # Inner radius 
+                    fill = main_pollutant)) +  
+  
+  # Draw the donut slices
+  geom_rect(color = "grey98") +  # Add light gray borders 
+  
+  # Add labels for slices where the percentage is greater than 1%
+  geom_text(aes(x = 3.5, y = labelPosition,  # Position labels at x = 3.5
+                label = ifelse(percent > 1, label, "")),  # Only show labels if >1%
+            color = "black", size = 3) +
+  
+  # Add external labels for slices where the percentage is exactly 1%
+  geom_text(data = subset(donut_data, round(percent, 1) == 1),  
+            aes(x = 4.5, y = labelPosition, label = label),  # Position labels further outside
+            color = "black", size = 3, hjust = 0) + 
+  
+  # Convert the bar chart into a circular donut shape
+  coord_polar(theta = "y") +  # Use polar coordinates with the y-axis determining angles
+  xlim(c(2, 5)) +  # Expand x-axis limits to make space for outside labels
+  
+  # Apply a custom color palette
+  scale_fill_manual(values = custom_smog_pal) +  
+  theme_void() +  
+  
+# LABS ---  
+  labs(
+    title = "Pollutant Distribution",  # Main chart title
+    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+    caption = "Data: EPA, 2025"  # Data source
+  ) +  
+  
+# CUSTOMIZE THEME ---
+  theme(
+    legend.position = "none",  # Remove the legend
+    plot.title.position = "plot",  # Position title relative to the entire plot
+    plot.caption.position = "plot",  # Position caption relative to the entire plot
+    
+    # title
+    plot.title = element_text(family = "mont",  # Use "mont" font
+                              face = "bold",  # Make it bold
+                              size = 18,  # Increase font size
+                              color = "black",  
+                              hjust = 0,  # Align to the far left
+                              margin = margin(b = 5)),  # Add spacing below title
+    
+    # subtitle
+    plot.subtitle = element_text(family = "open_sans",  
+                                 size = 11.5,  
+                                 color = "black",
+                                 hjust = 0,  # Align to the far left
+                                 margin = margin(b = 10)),  # Increase space below subtitle
+    
+    # caption
+    plot.caption = element_text(family = "open_sans",
+                                face = "italic",
+                                color = "black",
+                                hjust = 1,  # Align to the far right
+                                margin = margin(t = 15)),  # Add spacing above caption
+    
+    # overall plot margins
+    plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  # Ensure spacing from edges
+  )
 
 donut
 
-ggsave("donut.pdf", donut, width = 10, height = 6)
+ggsave("donut_w_labs.pdf", donut, width = 10, height = 6)
 
+```
+
+```{r}
+
+# Create the donut chart using ggplot2
+donut_box <- ggplot(donut_data, 
+                aes(ymax = ymax,  # Upper limit of each slice
+                    ymin = ymin,  # Lower limit 
+                    xmax = 4,  # Outer radius of the donut
+                    xmin = 3,  # Inner radius 
+                    fill = main_pollutant)) + 
+  
+  # Draw the slices as rectangles
+  geom_rect(color = "grey98") +  # Add light grey borders between slices
+  
+  # Add labels inside each slice
+  geom_label(aes(x = 3.5,  # Position labels at the middle of the donut ring
+                 y = labelPosition,  # Y-axis position of labels
+                 label = label),  # Text to display
+             color = "black", size = 3) +  # Label color and font size
+  
+  # Convert the bar chart into a circular donut chart
+  coord_polar(theta = "y") +  
+
+  # Control the thickness of the donut by setting x-axis limits
+  xlim(c(2, 4)) +  
+
+  # Apply a custom color palette for pollutants
+  scale_fill_manual(values = smog_pal2) +  
+  
+  # LABS ---  
+  labs(
+    title = "Pollutant Distribution",  # Main chart title
+    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+    caption = "Data: EPA, 2025"  # Data source
+  ) +  
+
+  # Remove background, grid, and axes for a clean look
+  theme_void() +  
+
+# CUSTOMIZE THEME ---
+  theme(
+    legend.position = "none",  # Remove the legend
+    plot.title.position = "plot",  # Position title relative to the entire plot
+    plot.caption.position = "plot",  # Position caption relative to the entire plot
+    
+    # title
+    plot.title = element_text(family = "mont",  # Use "mont" font
+                              face = "bold",  # Make it bold
+                              size = 18,  # Increase font size
+                              color = "black",  
+                              hjust = 0,  # Align to the far left
+                              margin = margin(b = 5)),  # Add spacing below title
+    
+    # subtitle
+    plot.subtitle = element_text(family = "open_sans",  
+                                 size = 11.5,  
+                                 color = "black",
+                                 hjust = 0,  # Align to the far left
+                                 margin = margin(b = 10)),  # Increase space below subtitle
+    
+    # caption
+    plot.caption = element_text(family = "open_sans",
+                                face = "italic",
+                                color = "black",
+                                hjust = 1,  # Align to the far right
+                                margin = margin(t = 15)),  # Add spacing above caption
+    
+    # overall plot margins
+    plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  # Ensure spacing from edges
+  )
+
+
+donut_box
+
+# Save 
+ggsave("donut.pdf",  # Filename
+       donut,  # The ggplot object to save
+       width = 10,  # Width of the output file
+       height = 6)  # Height of the output file
 
 
 ```
+```{r}
+# Create the donut chart using ggplot2
+donut_box <- ggplot(donut_data, 
+                aes(ymax = ymax,  # Upper limit of each slice
+                    ymin = ymin,  # Lower limit 
+                    xmax = 4,  # Outer radius of the donut
+                    xmin = 3,  # Inner radius 
+                    fill = main_pollutant)) + 
+  
+  # Draw the slices as rectangles
+  geom_rect(color = "grey98") +  # Add light grey borders between slices
+  
+  # Labels for slices larger than 1%
+  geom_label(data = subset(donut_data, percent > 1),
+             aes(x = 3.5, y = labelPosition, label = label), 
+             color = "black", 
+             size = 3, 
+             label.size = 0.2) +  # Thin border around label box
+  
+  # Labels for 1% slices - move slightly outward
+  geom_label(data = subset(donut_data, round(percent, 1) == 1),
+            aes(x = 3.9, y = labelPosition, label = label),  
+            color = "black", 
+            size = 3, 
+            label.size = 0.2) +  # Thin border
+  
+  # Convert the bar chart into a circular donut chart
+  coord_polar(theta = "y") +  
+
+  # Increase x-axis limits slightly to fit labels
+  xlim(c(2, 4.5)) +  
+
+  # Apply a custom color palette for pollutants
+  scale_fill_manual(values = smog_pal2) +  
+  
+  # LABS ---  
+  labs(
+    title = "Pollutant Distribution",  # Main chart title
+    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+    caption = "Data: EPA, 2025"  # Data source
+  ) +  
+
+  # Remove background, grid, and axes for a clean look
+  theme_void() +  
+
+# CUSTOMIZE THEME ---
+  theme(
+    legend.position = "none",  # Remove the legend
+    plot.title.position = "plot",  # Position title relative to the entire plot
+    plot.caption.position = "plot",  # Position caption relative to the entire plot
+    
+    # title
+    plot.title = element_text(family = "mont",  # Use "mont" font
+                              face = "bold",  # Make it bold
+                              size = 18,  # Increase font size
+                              color = "black",  
+                              hjust = 0,  # Align to the far left
+                              margin = margin(b = 5)),  # Add spacing below title
+    
+    # subtitle
+    plot.subtitle = element_text(family = "open_sans",  
+                                 size = 11.5,  
+                                 color = "black",
+                                 hjust = 0,  # Align to the far left
+                                 margin = margin(b = 10)),  # Increase space below subtitle
+    
+    # caption
+    plot.caption = element_text(family = "open_sans",
+                                face = "italic",
+                                color = "black",
+                                hjust = 1,  # Align to the far right
+                                margin = margin(t = 15)),  # Add spacing above caption
+    
+    # overall plot margins
+    plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  # Ensure spacing from edges
+  )
+
+donut_box
+
+# Save 
+ggsave("donut.pdf",  # Filename
+       donut_box,  # The ggplot object to save
+       width = 10,  # Width of the output file
+       height = 6)  # Height of the output file
+
+
+```
+

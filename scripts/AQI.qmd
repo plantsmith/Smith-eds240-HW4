@@ -146,7 +146,6 @@ subtitle <- glue::glue("
 
 ```
 
-
 ```{r}
 aqi_plot <- ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
   

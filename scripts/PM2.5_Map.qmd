@@ -73,7 +73,6 @@ enviroscreen_sf <- read_sf(here("data/enviroscreen/enviroscreen_shapefiles/CES4_
   clean_names() 
 ```
 
-
 ## Wrangle
 
 ```{r}
@@ -188,7 +187,7 @@ pm_map
 
 ```{r}
 ggsave(
-  filename = here::here("images", "pm_map.png"),
+  filename = here::here("images", "pm_map.svg"),
   plot = pm_map,
   device = "png",
   width = 8, 

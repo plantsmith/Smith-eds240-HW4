@@ -38,7 +38,6 @@ font_add_google(name = "Open Sans", family = "open_sans")
 showtext_auto()
 ```
 
-
 ```{r}
 #| message: false
 #| warning: false
@@ -116,6 +115,9 @@ median_aqi_df <- bind_rows(median_aqi_list)
 #| message: false
 #| warning: false
 #| output: false
+
+# data ranges from 2000 - 2024
+years <- 2000:2024
 
 # -------- S E T  U P  L O O P  --------
 common_pollutant_list <- map(years, ~ {
@@ -306,7 +308,6 @@ donut_data <- top_pollutants %>%
 
 ```
 
-
 ```{r}
 # Create the donut chart
 donut <- ggplot(donut_data, 
@@ -463,6 +464,7 @@ ggsave("donut.pdf",  # Filename
 
 
 ```
+
 ```{r}
 # Create the donut chart using ggplot2
 donut_box <- ggplot(donut_data, 
@@ -551,3 +553,75 @@ ggsave("donut.pdf",  # Filename
 
 ```
 
+```{r}
+donut_box <- ggplot(donut_data, 
+                aes(ymax = ymax,  # Upper limit of each slice
+                    ymin = ymin,  # Lower limit 
+                    xmax = 4,  # Outer radius of the donut
+                    xmin = 3,  # Inner radius 
+                    fill = main_pollutant)) + 
+  
+  # Draw the slices as rectangles
+  geom_rect(color = "grey98") +  # Add light grey borders between slices
+  
+  # Add labels inside each slice, adjusted to prevent overlap
+  geom_text(aes(x = 3.5,  # Position labels at the middle of the donut ring
+                 y = labelPosition,  # Y-axis position of labels
+                 label = label),  # Text to display
+             color = "black", size = 3, hjust = 0.5, vjust = 0.5) +  # Adjust text alignment
+  
+  # Convert the bar chart into a circular donut chart
+  coord_polar(theta = "y") +  
+
+  # Control the thickness of the donut by setting x-axis limits
+  xlim(c(2, 4)) +  
+
+  # Apply a custom color palette for pollutants
+  scale_fill_manual(values = smog_pal2) +  
+  
+  # LABS ---  
+  labs(
+    title = "Pollutant Distribution",  # Main chart title
+    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+    caption = "Data: EPA, 2025"  # Data source
+  ) +  
+
+  # Remove background, grid, and axes for a clean look
+  theme_void() +  
+
+  # CUSTOMIZE THEME ---
+  theme(
+    legend.position = "none",  # Remove the legend
+    plot.title.position = "plot",  # Position title relative to the entire plot
+    plot.caption.position = "plot",  # Position caption relative to the entire plot
+    
+    # title
+    plot.title = element_text(family = "mont",  # Use "mont" font
+                              face = "bold",  # Make it bold
+                              size = 18,  # Increase font size
+                              color = "black",  
+                              hjust = 0,  # Align to the far left
+                              margin = margin(b = 5)),  # Add spacing below title
+    
+    # subtitle
+    plot.subtitle = element_text(family = "open_sans",  
+                                 size = 11.5,  
+                                 color = "black",
+                                 hjust = 0,  # Align to the far left
+                                 margin = margin(b = 10)),  # Increase space below subtitle
+    
+    # caption
+    plot.caption = element_text(family = "open_sans",
+                                face = "italic",
+                                color = "black",
+                                hjust = 1,  # Align to the far right
+                                margin = margin(t = 15)),  # Add spacing above caption
+    
+    # overall plot margins
+    plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  # Ensure spacing from edges
+  )
+donut_box
+
+
+
+```

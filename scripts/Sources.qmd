@@ -271,7 +271,6 @@ subtitle <- glue::glue("
 )
 ```
 
-
 ```{r}
 ggplot(top_10_sources, 
        aes(x = fct_reorder(pollution_source, total_emissions),  

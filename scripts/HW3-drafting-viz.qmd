@@ -126,15 +126,17 @@ smog_pal2 <- c("#79AAB6",
               "#DF674F")
 
 custom_smog_pal <- c(
- "Ozone"= "#79AAB6",
+ "Ozone"= "#B0C7C1",
  "PM10" = "#B0C7C1", 
- "CO" =   "#DFAF75",  
- "NO2" =  "#DE8635",    
+ "CO" =   "#B0C7C1",  
+ "NO2" =  "#B0C7C1",    
  "PM2.5"= "#DF674F"      
 )
 
+
 smog_sub_pal <- smog_pal[c(4,5)]
 
+single_smog_pal <- smog_pal2[c(4,4,4,4,5)]
 
 
 ```
@@ -185,116 +187,91 @@ median_aqi_df <- bind_rows(median_aqi_list)
 ### Viz
 
 ```{r}
+ 
+
+# ggsave("aqi_plot.pdf", plot = aqi_plot, width = 8, height = 6, dpi = 300)
+
+
+```
+
+## PM 2.5 Over time
+
+```{r}
+PM2_5_df <- read.csv(here("data/pm_annual.csv")) %>% 
+  clean_names()
+
+PM2_5 <- PM2_5_df %>%
+  
+  # transform date from a character to a date
+  mutate(date = mdy(date)) %>%
+  
+  # create new columns for month, day, and year using lubridate
+  mutate(
+    month = month(date),  
+    day   = day(date),    
+    year  = year(date)    
+  ) %>%
+  
+  # select only the columns we need
+  select(daily_mean_pm2_5_concentration, units, year, month) 
+
+# -------- F I N D   A N N U A L  M E A N --------  
+   annual_PM2_5 <- PM2_5  %>%  
+  group_by(year) %>%
+    summarize(
+      units = first(units),
+      yearly_mean_pm2_5 = mean(daily_mean_pm2_5_concentration, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+```
+
+```{r}
+#| eval: true
+#| echo: true
 #| message: false
 #| warning: false
+#| output: false
 
-#subtitle: 
-subtitle <- glue::glue("
-    Tracking median Air Quality Index (AQI) over time:<br>
-    <span style='color:#88B589;'>**Good**</span>, 
-    <span style='color:#F3D03E;'>**Moderate**</span>, 
-    <span style='color:#E67E52;'>**Unhealthy for Sensitive Groups**</span>"
-)
-
-aqi_plot <- ggplot(median_aqi_df, aes(x = year, y = median_aqi)) +
+pm_trend <- ggplot(annual_PM2_5, aes(x = year, y = yearly_mean_pm2_5)) +
+  geom_line() + 
+  geom_point() +
   
-  # ADD COLOR TO AXIS LINES
+    # ADD COLOR TO AXIS LINES
   geom_segment(aes(x = 1999.65, 
                    xend = 1999.65, 
-                   y = 50, yend = 60), 
+                   y = 0, yend = 9), 
                    color = "#88B589", 
                    linewidth = 2) +
   geom_segment(aes(x = 1999.65, 
                    xend = 1999.65, 
-                   y = 60, yend = 100), 
+                   y =9, yend = 25), 
                    color = "#F3D03E", 
                    linewidth = 2) +
-  geom_segment(aes(x = 1999.65, 
-                   xend = 1999.65,
-                   y = 100, 
-                   yend = 105), 
-                  color = "#E67E52", 
-                 linewidth = 2) +
+    # geom_segment(aes(x = 1999.65, 
+    #                xend = 1999.65,
+    #                y = 25, 
+    #                yend = 30), 
+    #               color = "#E67E52", 
+    #              linewidth = 2) +
   
-# add lines to show where each threshold starts  
+  
+  # add lines to show where each threshold starts  
   # med - high
     geom_segment(aes(x = 1999.65, 
                      xend = 2024,
-                     y = 100, 
-                     yend = 100),
+                     y = 9, 
+                     yend = 9),
                      color = "grey90",
                      linewidth = 0.5,
                      linetype = "dashed") +
   
-    # low - med
-    geom_segment(aes(x = 1999.65, 
-                     xend = 2024,
-                     y = 60, 
-                     yend = 60),
-                     color = "grey90",
-                     linewidth = 0.5, 
-                     linetype = "dashed") +
   
+  # back to plotting
   
-  geom_line() + 
-  geom_point() +
-  
-# ADD ANNOTATIONS  
-  # Low Emission Standards 2004
-  annotate(
-    geom = "text",
-    x = 2000.6,
-    y = 80,
-    label = "LEV II Vehicle\nStandards Take Effect",
-    size = 3,
-    color = "black",
-    hjust = "inward"
-  ) +
-  # add arrow
-  annotate(
-    geom = "segment",
-    x = 2004, xend = 2004,
-    y = 89, yend = 81,
-  ) +  
-  
-  # Advanced Clean Cars Program & Cap-and-Trade Begin 2012
-  annotate(
-    geom = "text",
-    x = 2015.65,
-    y = 70.75,
-    label = "Advanced Clean\nCars Program Begins",
-    size = 3,
-    color = "black",
-    hjust = 1  # Left-aligned text
-  ) +
-  # add arrow
-annotate(
-    geom = "segment",  
-    x = 2012, xend = 2012, 
-    y = 73, yend = 83,  
-  ) +
-  # Bobcat Fire 2020
-  annotate(
-    geom = "text",
-    x = 2022.21,
-    y = 93.5,
-    label = "Bobcat Fire",
-    size = 3,
-    color = "black",
-    hjust = "inward"
-  ) +
-  # add arrow
-  annotate(
-    geom = "segment",
-    x = 2020, xend = 2020,
-    y = 91.5, yend = 86.65,
-  ) +
-  
-
-# BACK TO PLOTTING  
-  scale_y_continuous(
-    limits = c(50, 105),
-    breaks = seq(50, 100, by = 10)
+    scale_y_continuous(
+    limits = c(0, 25),
+    breaks = seq(0, 25, by = 5)
   ) +
   
   scale_x_continuous(
@@ -302,13 +279,9 @@ annotate(
     breaks = c(seq(2000, 2020, by = 5), 2024),
   ) +
   
-# TITLES, ETC.  
-labs(
-  title = "Los Angeles Air Quality Trends (2000–2024)",
-  subtitle = subtitle,
-  caption = "Data source: EPA (2025)"
-
-    ) +
+  labs(x = "Title",
+       x = "Year",
+       y = "Mean PM2.5 (µg/m³)") +
   
   theme_minimal() +
   
@@ -327,25 +300,110 @@ labs(
                              face = "italic",
                              color = "black",
                              margin = margin(t = 15, r = 0, b = 0, l = 0)),
-  
+
     # panel.grid.major.y = element_line(color = "gray90"),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
     panel.grid.minor.x = element_blank(),
     panel.grid.major.x = element_blank(),
     
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(), # remove y axis text
-    axis.title = element_blank(),   # Remove axis titles
+    # axis.line.y = element_blank(),
+    # axis.text.y = element_blank(), # remove y axis text
+    # axis.title = element_blank(),   # Remove axis titles
     
     plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
   
   )
 
-aqi_plot
+pm_trend
 
+ggsave("pm_trend_line.pdf", plot = pm_trend, width = 8, height = 6, dpi = 300)
 
+```
 
+### viz:
+
+```{r}
+# Filter data for PM2.5 after 2010
+filtered_pm <- annual_PM2_5 %>%
+  filter(year >= 2010)
+
+# Create the plot
+pm_trend <- ggplot(filtered_pm, aes(x = year, y = yearly_mean_pm2_5)) +
+  geom_line() + 
+  # Black points for all years
+  geom_point(color = "black", size = 3) + 
+  
+  # Red point for 2020
+  geom_point(data = filtered_pm %>% filter(year == 2020), color = "#DF674F", size = 3) + 
+  
+    # Bobcat Fire 2020
+  annotate(
+    geom = "text",
+    x = 2023.65,
+    y = 13.65,
+    label = "PM 2.5 levels spike during \nwildfire events like the \n2020 Bobcat Fire",
+    size = 3,
+    color = "black",
+    hjust = "inward"
+  ) +
+  
+    # add arrow
+  annotate(
+    geom = "segment",
+    x = 2020.15, xend = 2020.65,
+    y = 13.55, yend = 13.75,
+  ) +
+  
+  labs(
+    title = "Los Angeles Air Quality Trends (2000–2024)",
+    subtitle = "Although PM 2.5 pollution has steadily declined, it remains above 9 µg/m³, \nkeeping Los Angeles in the moderate pollution category.",
+    caption = "Data source: EPA (2025)",
+    x = "Year",
+    y = "Mean PM2.5 (µg/m³)"
+  ) + 
+  
+  scale_x_continuous(
+    limits = c(2010, 2024),
+    breaks = c(seq(2010, 2024, by = 5), 2024)
+  ) + 
+  
+  theme_minimal() + 
+  
+  # Customize the theme
+  theme(
+    plot.title.position = "plot", 
+    plot.title = element_text(
+      family = "mont",
+      face = "bold",
+      size = 18,
+      color = "black"
+    ),
+    plot.subtitle = element_text(
+      family = "open_sans",
+      size = 11.5,
+      color = "black",
+      margin = margin(t = 2, r = 0, b = 6, l = 0)
+    ),
+    plot.caption = element_text(
+      family = "open_sans",
+      face = "italic",
+      color = "black",
+      margin = margin(t = 15, r = 0, b = 0, l = 0)
+    ),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    # axis.title.x = element_text(size = 12),  # Added back axis title styling
+    axis.title.x = element_blank(),   # Remove axis titles
+      # Customizing legend  - plot.legend isnt working
+    legend.position = "none",  
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10)
+  ) 
+
+pm_trend
+
+# Save the plot
+ggsave("pm_trend_line.pdf", plot = pm_trend, width = 8, height = 6, dpi = 300)
 
 ```
 
@@ -433,6 +491,13 @@ circle_vertices_border <- circleLayoutVertices(circle_layout_border, npoints = 5
 # Combine the pollutant data with circles (center coordinates and radius)
 circle_labels <- cbind(top_pollutants, circle_layout)
 
+
+# Calculate Percentages:
+# Add a new column with the percentage of the average frequency of pollutants
+circle_labels$percent <- round(
+  circle_labels$avg_count / sum(circle_labels$avg_count) * 100)
+
+
 ```
 
 ```{r}
@@ -447,7 +512,10 @@ circle_labels <- cbind(top_pollutants, circle_layout)
 gg_circles <- ggplot() +
  # Draw the main circles
  geom_polygon(data = circle_vertices, 
-              aes(x = x, y = y, group = id, fill = as.factor(id)), 
+              aes(x = x, 
+                  y = y, 
+                  group = id, 
+                  fill = as.factor(id)), 
               color = "grey90",          # add white borders
               size = 0.2,              # thinner border 
               alpha = 0.9) +           
@@ -477,21 +545,21 @@ main_pollutant_circles <- gg_circles_nested +
   geom_text(data = circle_labels,
             aes(x = x, y = y, 
                 size = avg_count,      # text size varies with pollution count
-                label = main_pollutant), 
+                label = paste0(main_pollutant, "\n", percent, "%")),  
             fontface = "bold",
             family = "mont",          
             color = "#2F2F2F") +   
-  scale_fill_manual(values = smog_pal2) +  # custom color palette
-  scale_size_continuous(range = c(2, 7)) + # set text size range (small --> large)
+  scale_fill_manual(values = single_smog_pal) +  # custom color palette
+  scale_size_continuous(range = c(1, 7)) + # set text size range (small --> large)
   
   theme_void() +  
 
   # LABS ---  
-  labs(
-    title = "Pollutant Distribution",  # Main chart title
-    subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
-    caption = "Data: EPA, 2025"  # Data source
-  ) +  
+  # labs(
+    # title = "Pollutant Distribution",  # Main chart title
+    # subtitle = "Median occurrence of dominant pollutants from 2000 to 2024",  # Subtitle with date range
+  #   caption = "Data: EPA, 2025"  # Data source
+  # ) +  
 
   # CUSTOMIZE THEME ---
   theme(
@@ -500,32 +568,36 @@ main_pollutant_circles <- gg_circles_nested +
     plot.caption.position = "plot",  
     
     # title
-    plot.title = element_text(family = "mont",  # Use "mont" font
-                              face = "bold",  # Make it bold
-                              size = 18,  # Increase font size
-                              color = "black",  
-                              hjust = 0,  # Align to the far left
-                              margin = margin(b = 5)),  # Add spacing below title
-    
-    # subtitle
-    plot.subtitle = element_text(family = "open_sans",  
-                                 size = 11.5,  
-                                 color = "black",
-                                 hjust = 0,  
-                                 margin = margin(b = 10)), 
+    # plot.title = element_text(family = "mont",  # Use "mont" font
+    #                           face = "bold",  # Make it bold
+    #                           size = 18,  # Increase font size
+    #                           color = "black",  
+    #                           hjust = 0,  # Align to the far left
+    #                           margin = margin(b = 5)),  # Add spacing below title
+    # 
+    # # subtitle
+    # plot.subtitle = element_text(family = "open_sans",  
+    #                              size = 11.5,  
+    #                              color = "black",
+    #                              hjust = 0,  
+    #                              margin = margin(b = 10)), 
     
     # caption
-    plot.caption = element_text(family = "open_sans",
-                                face = "italic",
-                                color = "black",
-                                hjust = 1,  
-                                margin = margin(t = 15)),  # Add spacing above caption
+    # plot.caption = element_text(family = "open_sans",
+    #                             face = "italic",
+    #                             color = "black",
+    #                             hjust = 1,  
+    #                             margin = margin(t = 15)),  # Add spacing above caption
     
     # overall plot margins
     plot.margin = margin(t = 20, r = 20, b = 20, l = 20)  # Ensure spacing from edges
   )
 
 main_pollutant_circles
+
+
+ggsave("main_pollutant_circles.pdf", plot = main_pollutant_circles, width = 8, height = 6, dpi = 300)
+
 ```
 
 ### Viz - Choice 2 - Donuts:
@@ -803,7 +875,7 @@ subtitle <- glue::glue("
     Analyzing Major Emission Contributors Across  <span style='color:#B77B70;'>**Point**</span> and <span style='color:#CC7E62;'>**Non-Point Sources**</span> in Los Angeles"
 )
 
-ggplot(top_10_sources, 
+top_sources <- ggplot(top_10_sources, 
        aes(x = fct_reorder(pollution_source, total_emissions),  
            y = total_emissions,  
            fill = source_type)) + 
@@ -814,15 +886,23 @@ ggplot(top_10_sources,
   # Adding a horizontal line at y = 100 to highlight major source threshold
   geom_hline(yintercept = 100, linetype = "dashed", color = "black") +  # Horizontal line at y = 100
   
-  # # rectangle -- i dont think I need this
-  #   annotate(
-  #   geom = "rect",
-  #   xmin = 7.25, xmax = 9.75,
-  #   ymin = 500, ymax = 1125,
-  #   alpha = 0.5,
-  #   fill = "gray70", color = "black"
-  # ) +
-  #text
+    # Adding a horizontal line at y = 100 to highlight major source threshold
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "grey90") +  # Horizontal line at y = 100
+  
+    # Adding a horizontal line at y = 100 to highlight major source threshold
+  geom_hline(yintercept = 2000, linetype = "dashed", color = "grey90") +  # Horizontal line at y = 100
+  
+    # Adding a horizontal line at y = 100 to highlight major source threshold
+  geom_hline(yintercept = 3000, linetype = "dashed", color = "grey90") +  # Horizontal line at y = 100
+  
+  #   # Add text to bars ()
+  # geom_text(aes(label = paste0(round(total_emissions), " tons")), # paste0 combines the text w %
+  #           hjust = 1.2,  # Aajust text position (move inside bars)
+  #           color = "white",
+  #           family = "open_sans",
+  #           size = 3) +
+  # 
+
 annotate(
   geom = "text",
   x = 3,
@@ -851,6 +931,7 @@ annotate(
   
   # Format y-axis labels to include "tons"
   scale_y_continuous(labels = function(x) paste0(x, " tons")) +  # Adding "tons" to y-axis labels
+  
   
 # LABS---
   labs(
@@ -895,6 +976,13 @@ annotate(
     # Customizing legend  - plot.legend isnt working
     legend.position = "none",  
 )
+
+top_sources
+
+
+ggsave("top_sources.pdf", plot = top_sources, width = 8, height = 6, dpi = 300)
+
+
 ```
 
 ## Where is PM 2.5 pollution most prevalent?
@@ -927,6 +1015,7 @@ excluded_zips <- c("90265", "93535", "93552", "93532", "90704",
                    "91384", "91387", "91390", "93510", "93536", "91351",
                    "91011", "91355", "93551", "91342", "91381")
 
+
 # Tidy data with simplified filtering
 enviroscreen_sf <- enviroscreen_sf %>% 
   filter(county == "Los Angeles") %>% 
@@ -939,6 +1028,9 @@ enviroscreen_sf <- enviroscreen_sf %>%
   filter(!approx_loc %in% excluded_locations) %>%
   filter(!tract %in% excluded_tracts) %>%
   filter(!zip %in% excluded_zips)
+
+
+
 
 ```
 
@@ -1008,6 +1100,55 @@ theme(
 ) 
 
 pm_map
+
+
+ggsave("map.pdf", plot = pm_map, width = 8, height = 6, dpi = 300)
+
+```
+
+## Top Zip Codes (inset map?)
+
+```{r}
+# -------------- top zip codes ------
+
+top_zips <- c("91335", "91406", "90012", "90031")
+
+top_2_5 <- enviroscreen_sf %>% 
+  group_by(tract) %>% 
+  arrange(desc(pm2_5_p)) %>% 
+  filter(zip %in% top_zips) %>% 
+  filter(pm2_5_p > 90)  # Filter for pm2_5_p > 90
+
+
+
+
+# top zip: 
+
+# BASE MAP
+
+top_zips_map <- ggplot(top_2_5) +
+  geom_sf(aes(fill = pm2_5_p), color = NA, linewidth = 0) +  # Fill with pm2_5_p values
+  theme_void() +
+  
+  # Gradient color scale using one color (#DF674F) with variations
+  scale_fill_gradient(low = scales::alpha("#DF674F", 0.6), high = "#DF674F",  # Light to dark version of #DF674F
+                       breaks = seq(90, max(top_2_5$pm2_5_p), by = 10)) + # Set breaks dynamically based on data
+  
+  # Update look of legend
+  guides(fill = guide_colorbar(barwidth = 25, 
+                               barheight = 0.75)) + # Stretch out the legend
+
+  # Customize the theme
+  theme(
+    legend.position = "bottom",  # Move legend to the bottom
+    legend.title = element_blank(),  # No legend title
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10) # Margins
+  )
+
+top_zips_map
+
+ggsave("top_zips.pdf", plot = top_zips_map, width = 8, height = 6, dpi = 300)
+  
 ```
 
 # Question 7:
